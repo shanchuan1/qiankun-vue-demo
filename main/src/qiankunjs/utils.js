@@ -299,7 +299,7 @@ export function getXPathForElement(el, document) {
 
 export function getContainer(container) {
     return typeof container === 'string' ? document.querySelector(container) : container;
-  }
+}
 
 export function getContainerXPath(container){
     if (container) {

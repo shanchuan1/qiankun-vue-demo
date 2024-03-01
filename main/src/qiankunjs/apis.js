@@ -127,11 +127,13 @@ export function loadMicroApp(
     const { props, name } = app;
 
     const container = 'container' in app ? app.container : undefined;
+    // console.log('🚀 ~ container:', container) //#appContainer
     // Must compute the container xpath at beginning to keep it consist around app running
     // If we compute it every time, the container dom structure most probably been changed and result in a different xpath value
     const containerXPath = getContainerXPath(container);
+    // console.log('🚀 ~ containerXPath:', containerXPath) // /*[name()='HTML']/*[name()='BODY'][1]/*[name()='DIV'][1]/*[name()='DIV'][1]
     const appContainerXPathKey = `${name}-${containerXPath}`;
-
+    // console.log('🚀 ~ appContainerXPathKey:', appContainerXPathKey)// app-vue-history-/*[name()='HTML']/*[name()='BODY'][1]/*[name()='DIV'][1]/*[name()='DIV'][1]
     let microApp;
     const wrapParcelConfigForRemount = (config) => {
         let microAppConfig = config;

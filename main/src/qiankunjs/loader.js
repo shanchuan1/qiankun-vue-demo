@@ -51,10 +51,12 @@ async function validateSingularMode(
     return typeof validate === 'function' ? validate(app) : !!validate;
 }
 
+/* 将子应用的index.html的字符串文本，转为真实dom的innerHTML的内容 */
 function createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceId) {
     const containerElement = document.createElement('div');
     containerElement.innerHTML = appContent;
-    const appElement = containerElement.firstChild;
+    const appElement = containerElement.firstChild; // 脱离外层的div
+    console.log('🚀 ~ createElement ~ appElement:', appElement)
     if (strictStyleIsolation) {
         if (!supportShadowDOM) {
             console.warn(
@@ -85,7 +87,6 @@ function createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceI
             css.process(appElement, stylesheetElement, appInstanceId);
         });
     }
-    console.log('🚀 ~ appElement:', appElement);
     return appElement;
 }
 
@@ -108,8 +109,9 @@ function getRender(appInstanceId, appContent, legacyRender) {
 
             return legacyRender({ loading, appContent: element ? appContent : '' });
         }
-
+        /* 获取容器宿主元素 #appContainer */
         const containerElement = getContainer(container);
+        console.log('🚀 ~ render ~ containerElement:', containerElement)
 
         // The container might have be removed after micro app unmounted.
         // Such as the micro app unmount lifecycle called by a react componentWillUnmount lifecycle, after micro app unmounted, the react component might also be removed
@@ -138,6 +140,7 @@ function getRender(appInstanceId, appContent, legacyRender) {
 
             // append the element to container if it exist
             if (element) {
+                /* 将子应用挂载在容器宿主作为容器的子元素 */
                 rawAppendChild.call(containerElement, element);
             }
         }
@@ -216,7 +219,6 @@ function getLifecyclesFromExports(
 
 
 export async function loadApp(app, configuration = {}, lifeCycles) {
-    console.log('🚀 ~ loadApp ~ configuration:', configuration)
     const { entry, name: appName } = app;
     const appInstanceId = genAppInstanceIdByName(appName);
 
@@ -239,32 +241,43 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
         assetPublicPath,
         getExternalScripts
     } = await importEntry(entry, importEntryOpts);
-    console.log('🚀 ~ template:', template);
-    console.log('🚀 ~ execScripts:', execScripts);
-    console.log('🚀 ~ assetPublicPath:', assetPublicPath);
-    console.log('🚀 ~ getExternalScripts:', getExternalScripts);
+    // console.log('🚀 ~ template:', template);
+    // console.log('🚀 ~ execScripts:', execScripts);
+    // console.log('🚀 ~ assetPublicPath:', assetPublicPath);
+    // console.log('🚀 ~ getExternalScripts:', getExternalScripts);
 
     await getExternalScripts();
-
+ 
     if (await validateSingularMode(singular, app)) {
         await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
     }
 
+    /* 
+    将importEntry拉取的子应用的index.html组装成挂载在主应用的dom模板===》》》》字符串
+    即：将微应用dom最外层包裹qiankun标识的div，子级为微应用的index.html内容
+    标识如：<div id="__qiankun_microapp_wrapper_for_app_vue_history__" data-name="app-vue-history" data-version="2.10.16" data-sandbox-cfg=true>
+    appContent内容为字符串
+    */
     const appContent = getDefaultTplWrapper(appInstanceId, sandbox)(template);
     console.log('🚀 ~ appContent:', appContent);
 
     const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
+    console.log('🚀 ~ loadApp ~ strictStyleIsolation:', strictStyleIsolation)
     const scopedCSS = isEnableScopedCSS(sandbox);
     console.log('🚀 ~ scopedCSS:', scopedCSS);
+    /* 转为真实dom */
     let initialAppWrapperElement = createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceId);
+    console.log('🚀 ~ loadApp ~ initialAppWrapperElement:', initialAppWrapperElement)
 
     const initialContainer = 'container' in app ? app.container : undefined;
     const legacyRender = 'render' in app ? app.render : undefined;
 
     const render = getRender(appInstanceId, appContent, legacyRender);
+    console.log('🚀 ~ loadApp ~ render:', render)
 
     // 第一次加载设置应用可见区域 dom 结构
     // 确保每次应用加载前容器 dom 结构已经设置完毕
+    /* 将子应用挂载到目标宿主容器上 */
     render({ element: initialAppWrapperElement, loading: true, container: initialContainer }, 'loading');
 
     const initialAppWrapperGetter = getAppWrapperGetter(
