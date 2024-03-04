@@ -8,7 +8,9 @@ import getEngineFlagAddon from './engineFlag';
 import getRuntimePublicPathAddOn from './runtimePublicPath';
 
 export default function getAddOns(global, publicPath) {
-  return mergeWith({}, getEngineFlagAddon(global), getRuntimePublicPathAddOn(global, publicPath), (v1, v2) =>
+  const Merged = mergeWith({}, getEngineFlagAddon(global), getRuntimePublicPathAddOn(global, publicPath), (v1, v2) =>
     concat(v1 ?? [], v2 ?? []),
   );
+  console.log('🚀 ~ getAddOns ~ Merged:', Merged)
+  return Merged
 }

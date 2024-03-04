@@ -57,7 +57,7 @@ entry: 微应用的访问地址,必须是服务启动的地址
 //   { name: 'app-vue-history', entry: 'http://localhost:2222' },
 // ]);
 
-prefetchAppsFn()
+// prefetchAppsFn()
 
 
 

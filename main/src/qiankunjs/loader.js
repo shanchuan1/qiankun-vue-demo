@@ -182,6 +182,7 @@ function getAppWrapperGetter(
 }
 
 
+/* 从window === sandboxContainer.instance.proxy 子应用的沙箱容器内获取子应用生命周期 （沙箱容器的原型挂载有子应用的相关信息） */
 function getLifecyclesFromExports(
     scriptExports,
     appName,
@@ -217,7 +218,15 @@ function getLifecyclesFromExports(
   }
 
 
-
+/* loadApp ===> 加载单个微应用
+1. importEntry拉取并解析子应用的资源文件（template：html文件内容解析成string，js文件）(并非全部的js文件，近当前index.html的路由地址引用到的js文件)                                                                       
+2. 将子应用的index.html内容组装父级加上id="__qiankun_microapp_wrapper_for标识，同时将这个string转为真实dom，最后将这个dom挂载(HTMLElement.prototype.appendChild)在指定子应用容器container内
+3. 创建应用运行的时的沙箱环境
+4. 执行子应用的js文件，获取js的导出的{ bootstrap, mount, unmount }生命周期函数
+5. 从沙箱子应用的容器上的原型获取子应用的生命周期 
+6. 获取子应用状态方法的action
+7. 将子应用相关信息整合到这个parcelConfigGetter函数体内包裹配置，最终loadApp返回这个函数
+*/
 export async function loadApp(app, configuration = {}, lifeCycles) {
     const { entry, name: appName } = app;
     const appInstanceId = genAppInstanceIdByName(appName);
@@ -288,13 +297,14 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
         () => initialAppWrapperElement,
     );
 
-    let global = globalContext;
+    let global = globalContext;  /* window */
     let mountSandbox = () => Promise.resolve();
     let unmountSandbox = () => Promise.resolve();
     const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
     const speedySandbox = typeof sandbox === 'object' ? sandbox.speedy !== false : true;
     let sandboxContainer;
     if (sandbox) {
+        /* 生成应用运行的时的沙箱环境 */
         sandboxContainer = createSandboxContainer(
             appInstanceId,
             initialAppWrapperGetter,
@@ -304,7 +314,7 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
             global,
             speedySandbox,
         );
-        global = sandboxContainer.instance.proxy;
+        global = sandboxContainer.instance.proxy; /* 将window的全局改为子应用沙箱容器的proxy */
         mountSandbox = sandboxContainer.mount;
         unmountSandbox = sandboxContainer.unmount;
         console.log('🚀 ~ sandboxContainer:', sandboxContainer);
@@ -318,21 +328,28 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
         beforeLoad = [],
     } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
 
+    console.log('🚀 ~ loadApp ~ beforeLoad:', beforeLoad)
+
     await execHooksChain(toArray(beforeLoad), app, global);
 
+    /* 执行子应用的js文件，获取js的导出的{ bootstrap, mount, unmount }生命周期函数 */
     const scriptExports = await execScripts(global, sandbox && !useLooseSandbox, {
         scopedGlobalVariables: speedySandbox ? cachedGlobals : [],
     });
+    console.log('🚀 ~ loadApp ~ scriptExports:', scriptExports)
+
+    /* 从子应用的导出获取生命周期 */
     const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
         scriptExports,
         appName,
         global,
         sandboxContainer?.instance?.latestSetProp,
     );
-
+    /* 获取子应用状态方法的action */
     const { onGlobalStateChange, setGlobalState, offGlobalStateChange } = getMicroAppStateActions(appInstanceId);
 
     const syncAppWrapperElement2Sandbox = (element) => (initialAppWrapperElement = element);
+    /* 包裹配置 */
     const parcelConfigGetter = (remountContainer = initialContainer) => {
         let appWrapperElement;
         let appWrapperGetter;

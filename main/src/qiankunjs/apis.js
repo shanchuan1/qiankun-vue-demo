@@ -127,7 +127,6 @@ export function loadMicroApp(
     const { props, name } = app;
 
     const container = 'container' in app ? app.container : undefined;
-    // console.log('🚀 ~ container:', container) //#appContainer
     // Must compute the container xpath at beginning to keep it consist around app running
     // If we compute it every time, the container dom structure most probably been changed and result in a different xpath value
     const containerXPath = getContainerXPath(container);
@@ -178,6 +177,12 @@ export function loadMicroApp(
         const userConfiguration = autoDowngradeForLowVersionBrowser(
             configuration ?? { ...frameworkConfiguration, singular: false },
         );
+
+        /* 获取缓存的生命周期函数 
+        如果存在 container，则检查用户配置中的 $$cacheLifecycleByAppName 属性。如果为真，
+        则尝试从 appConfigPromiseGetterMap 中获取应用名称为 name 的应用配置信息的 Promise，如果存在则直接返回该 Promise 的结果，
+        并使用 wrapParcelConfigForRemount 对结果进行包装；如果不存在，则继续下一步的处理。同样的逻辑也应用在 containerXPath 上。
+        */
         const { $$cacheLifecycleByAppName } = userConfiguration;
 
         if (container) {
@@ -193,15 +198,26 @@ export function loadMicroApp(
             }
         }
 
+        /* 加载应用配置：如果以上条件都不满足，即没有缓存的生命周期函数，那么调用 loadApp 函数来加载应用配置信息。
+        加载完成后，会将结果存储在 parcelConfigObjectGetterPromise 中 */
         const parcelConfigObjectGetterPromise = loadApp(app, userConfiguration, lifeCycles);
         console.log('🚀 ~ memorizedLoadingFn ~ parcelConfigObjectGetterPromise:', parcelConfigObjectGetterPromise)
 
+
+        /* 
+        缓存应用配置：如果存在 container，则根据 $$cacheLifecycleByAppName 属性来确定是否需要缓存应用配置。
+        如果需要缓存，则将 parcelConfigObjectGetterPromise 存储在 appConfigPromiseGetterMap 中，
+        键名为应用的名称 name 或容器 XPath appContainerXPathKey
+        */
         if (container) {
             if ($$cacheLifecycleByAppName) {
                 appConfigPromiseGetterMap.set(name, parcelConfigObjectGetterPromise);
             } else if (containerXPath) appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise);
         }
 
+        /* 
+        返回应用配置：最后，返回 parcelConfigObjectGetterPromise 的执行结果，即加载的应用配置信息，并传入 container
+        */
         return (await parcelConfigObjectGetterPromise)(container);
     };
 

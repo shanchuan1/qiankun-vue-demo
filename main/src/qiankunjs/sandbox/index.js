@@ -56,6 +56,8 @@ export function createSandboxContainer(
       excludeAssetFilter,
       speedySandBox
     );
+    console.log('🚀 ~ bootstrappingFreers:', bootstrappingFreers)
+
     // mounting freers are one-off and should be re-init at every mounting time
     let mountingFreers = [];
   
