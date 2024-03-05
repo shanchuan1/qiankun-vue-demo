@@ -217,6 +217,7 @@ function getLifecyclesFromExports(
     throw new QiankunError(`You need to export lifecycle functions in ${appName} entry`);
   }
 
+  let prevAppUnmountedDeferred;
 
 /* loadApp ===> 加载单个微应用
 1. importEntry拉取并解析子应用的资源文件（template：html文件内容解析成string，js文件）(并非全部的js文件，近当前index.html的路由地址引用到的js文件)                                                                       
