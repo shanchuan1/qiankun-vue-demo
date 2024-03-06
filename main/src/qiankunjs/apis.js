@@ -80,8 +80,6 @@ export function registerMicroApps(
     unregisteredApps.forEach((app) => {
         const { name, activeRule, loader = noop, props, ...appConfig } = app;
         console.log('🚀 ~ unregisteredApps.forEach ~ app:', app)
-        console.log('🚀 ~ app: ~ frameworkConfiguration:', frameworkConfiguration)
-        console.log('🚀 ~ app: ~ lifeCycles:', lifeCycles)
         registerApplication({
             name,
             app: async () => {
@@ -92,8 +90,6 @@ export function registerMicroApps(
                     await loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles)
                     
                 )();
-                console.log('🚀 ~ app: ~ mount:', mount)
-                console.log('🚀 ~ app: ~ otherMicroAppConfigs:', otherMicroAppConfigs)
                 return {
                     mount: [async () => loader(true), ...toArray(mount), async () => loader(false)],
                     ...otherMicroAppConfigs,

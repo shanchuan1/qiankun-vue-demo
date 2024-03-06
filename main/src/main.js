@@ -19,8 +19,12 @@ import store from "./store";
 // import "./handload.js";
 
 /* 路由注册加载子应用 */
-import "./routeload.js"
+import "./routeload.js";
 
+
+
+/* 测试API */
+// import "./qiankunjs/API/importEntry.js";
 
 Vue.config.productionTip = false;
 new Vue({

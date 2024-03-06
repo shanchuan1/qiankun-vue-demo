@@ -30,15 +30,27 @@ console.log("监听url地址11111");
   1. 如果是手动对浏览器窗口地址修改的话，那么这个onpopstate事件不会被触发
   2. 如果是使用pushState，replaceState对url地址修改的话，那么事件会被触发(vue-router原理就是这两个api)
   */
-window.onpopstate = function (popstateEvent) {
-  alert(
-    "location: " +
-      window.location +
-      ", state: " +
-      JSON.stringify(popstateEvent.state)
-  );
-};
-
+// window.onpopstate = function (popstateEvent) {
+//   console.log('🚀 ~ popstateEvent:', popstateEvent)
+//   alert(
+//     "location: " +
+//       window.location +
+//       ", state: " +
+//       JSON.stringify(popstateEvent.state) +
+//       JSON.stringify(popstateEvent.type) 
+//   );
+// };
+// 监听 popstate 事件
+window.addEventListener('popstate', function(event) {
+    console.log('🚀 ~ window.addEventListener ~ event:', event)
+    console.log((
+        "location: " +
+          window.location +
+          ", state: " +
+          JSON.stringify(popstateEvent.state) +
+          JSON.stringify(popstateEvent.type) 
+      ));
+  });
 /* 
   history.pushState触发onpopstate事件
 */

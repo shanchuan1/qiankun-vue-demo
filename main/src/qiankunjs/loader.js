@@ -54,6 +54,7 @@ async function validateSingularMode(
 /* 将子应用的index.html的字符串文本，转为真实dom的innerHTML的内容 */
 function createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceId) {
     const containerElement = document.createElement('div');
+    /* innerHTML会将appContent内的 <html lang="en"> 标签字符串给去除*/
     containerElement.innerHTML = appContent;
     const appElement = containerElement.firstChild; // 脱离外层的div
     console.log('🚀 ~ createElement ~ appElement:', appElement)
@@ -245,6 +246,10 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
         ...importEntryOpts
     } = configuration;
 
+    /* importEntry步骤
+    1. 拉取对应地址的index.html文件
+    2. 会先用正则匹配到其中的 js/css 相关标签，然后替换掉，它需要自己加载 js 并运行
+    */
     const {
         template,
         execScripts,
@@ -256,15 +261,16 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
     // console.log('🚀 ~ assetPublicPath:', assetPublicPath);
     // console.log('🚀 ~ getExternalScripts:', getExternalScripts);
 
+    /* 上面注释掉了加载js的标签，手动加载拉取js文件 */
     await getExternalScripts();
  
     if (await validateSingularMode(singular, app)) {
         await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
     }
 
-    /* 
-    将importEntry拉取的子应用的index.html组装成挂载在主应用的dom模板===》》》》字符串
-    即：将微应用dom最外层包裹qiankun标识的div，子级为微应用的index.html内容
+    /* getDefaultTplWrapper
+    将importEntry拉取的子应用的index.html组装成挂载在主应用的dom模板 ===>>>字符串
+    即：将微应用dom最外层包裹qiankun标识的div，子级为微应用的index.html内容 (同时子应用的html文件内的，html，head(转为qiankun-head)，body去除)
     标识如：<div id="__qiankun_microapp_wrapper_for_app_vue_history__" data-name="app-vue-history" data-version="2.10.16" data-sandbox-cfg=true>
     appContent内容为字符串
     */
@@ -272,18 +278,14 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
     console.log('🚀 ~ appContent:', appContent);
 
     const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
-    console.log('🚀 ~ loadApp ~ strictStyleIsolation:', strictStyleIsolation)
     const scopedCSS = isEnableScopedCSS(sandbox);
-    console.log('🚀 ~ scopedCSS:', scopedCSS);
     /* 转为真实dom */
     let initialAppWrapperElement = createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceId);
-    console.log('🚀 ~ loadApp ~ initialAppWrapperElement:', initialAppWrapperElement)
 
     const initialContainer = 'container' in app ? app.container : undefined;
     const legacyRender = 'render' in app ? app.render : undefined;
 
     const render = getRender(appInstanceId, appContent, legacyRender);
-    console.log('🚀 ~ loadApp ~ render:', render)
 
     // 第一次加载设置应用可见区域 dom 结构
     // 确保每次应用加载前容器 dom 结构已经设置完毕
