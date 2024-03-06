@@ -1,5 +1,5 @@
 /* qiankunAPi  */
-import { registerMicroApps, start } from "./qiankunjs";
+import { registerMicroApps, start } from "./qiankun/qiankunjs";
 import store from "./store";
 
 /* 路由注册子应用 

@@ -1,5 +1,5 @@
 /* qiankunAPi  */
-import {prefetchAppsFn, loadMicroApp} from './qiankunjs'
+import {prefetchAppsFn, loadMicroApp} from './qiankun/qiankunjs'
 import store from "./store";
 
 

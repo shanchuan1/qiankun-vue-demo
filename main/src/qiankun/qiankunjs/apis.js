@@ -1,5 +1,6 @@
 import { noop } from 'lodash';
-import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+// import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import { mountRootParcel, registerApplication, start as startSingleSpa } from '../single-spajs';
 import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
 import { Deferred, getContainerXPath, isConstDestructAssignmentSupported, toArray } from './utils';

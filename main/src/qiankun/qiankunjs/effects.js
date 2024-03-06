@@ -1,12 +1,6 @@
-/*
- * @Author: zhongqifeng 1121021693@qq.com
- * @Date: 2024-02-27 14:00:45
- * @LastEditors: zhongqifeng 1121021693@qq.com
- * @LastEditTime: 2024-02-27 14:01:11
- * @FilePath: \qiankun-vue-demo\main\src\qiankunApi\effects.js
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- */
-import { getMountedApps, navigateToUrl } from 'single-spa';
+
+// import { getMountedApps, navigateToUrl } from 'single-spa';
+import { getMountedApps, navigateToUrl } from '../single-spajs';
 
 const firstMountLogLabel = '[qiankun] first app mounted';
 if (process.env.NODE_ENV === 'development') {

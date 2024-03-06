@@ -1,6 +1,7 @@
 import { importEntry } from 'import-html-entry';
 import { isFunction } from 'lodash';
-import { getAppStatus, getMountedApps, NOT_LOADED } from 'single-spa';
+// import { getAppStatus, getMountedApps, NOT_LOADED } from 'single-spa';
+import { getAppStatus, getMountedApps, NOT_LOADED } from '../single-spajs';
 
 
 function idleCall(cb, start) {

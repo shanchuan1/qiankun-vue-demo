@@ -1,5 +1,6 @@
 
-import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+// import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import { mountRootParcel, registerApplication, start as startSingleSpa } from '../../single-spajs';
 import { loadApp } from '../loader';
 import { Deferred, getContainerXPath, isConstDestructAssignmentSupported, toArray } from '../utils';
 

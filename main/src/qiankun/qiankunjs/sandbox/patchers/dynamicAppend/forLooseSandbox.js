@@ -1,4 +1,5 @@
-import { checkActivityFunctions } from 'single-spa';
+// import { checkActivityFunctions } from 'single-spa';
+import { checkActivityFunctions } from '../../../../single-spajs';
 import {
   calcAppCount,
   isAllAppsUnmounted,

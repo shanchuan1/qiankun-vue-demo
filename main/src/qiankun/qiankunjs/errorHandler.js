@@ -1,4 +1,5 @@
-export { addErrorHandler, removeErrorHandler } from 'single-spa';
+// export { addErrorHandler, removeErrorHandler } from 'single-spa';
+export { addErrorHandler, removeErrorHandler } from '../single-spajs';
 
 /* 添加全局的未捕获异常处理器 */
 export function addGlobalUncaughtErrorHandler(errorHandler) {
