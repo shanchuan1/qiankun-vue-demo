@@ -43,12 +43,14 @@ export function getAppChanges() {
 
     switch (app.status) {
       case LOAD_ERROR:
+        /* 命中当前子应用的路由且距离上次加载错误超过 200 毫秒 将其添加到 appsToLoad 数组中，准备重新加载。*/
         if (appShouldBeActive && currentTime - app.loadErrorTime >= 200) {
           appsToLoad.push(app);
         }
         break;
       case NOT_LOADED:
       case LOADING_SOURCE_CODE:
+        /* 命中当前子应用的路由 则将其添加到 appsToLoad 数组中，准备加载 */
         if (appShouldBeActive) {
           appsToLoad.push(app);
         }
@@ -56,13 +58,16 @@ export function getAppChanges() {
       case NOT_BOOTSTRAPPED:
       case NOT_MOUNTED:
         if (!appShouldBeActive && getAppUnloadInfo(toName(app))) {
+          /* 未命中当前子应用路由  将其添加到 appsToUnload 数组中，准备卸载*/
           appsToUnload.push(app);
         } else if (appShouldBeActive) {
+          /*命中当前子应用的路由 将其添加到 appsToMount 数组中，准备挂载 */
           appsToMount.push(app);
         }
         break;
       case MOUNTED:
         if (!appShouldBeActive) {
+          /*未命中当前子应用路由  将其添加到 appsToUnmount 数组中，准备卸载 */
           appsToUnmount.push(app);
         }
         break;
@@ -101,8 +106,8 @@ export function registerApplication(
 ) {
   const registration = sanitizeArguments(
     appNameOrConfig,
-    appOrLoadApp,
-    activeWhen,
+    appOrLoadApp, /* qiankun封装传入的loadAPP函数 */
+    activeWhen, /* 从原来的 字符串/app-vue-history， 转为匹配命中这个路由地址的函数*/
     customProps
   );
 
@@ -136,7 +141,7 @@ export function registerApplication(
     assign(
       {
         loadErrorTime: null,
-        status: NOT_LOADED,
+        status: NOT_LOADED,  /* 子应用刚注册， 加入当前状态： NOT_LOADED */
         parcels: {},
         devtools: {
           overlays: {
@@ -149,8 +154,11 @@ export function registerApplication(
     )
   );
 
+  /* typeof window !== "undefined" 当前存在window的环境下 */
   if (isInBrowser) {
+    /* 引入jquery的支持 */
     ensureJQuerySupport();
+    /* 路由重载 */
     reroute();
   }
 }
@@ -421,6 +429,7 @@ function sanitizeArguments(
 
   registration.loadApp = sanitizeLoadApp(registration.loadApp);
   registration.customProps = sanitizeCustomProps(registration.customProps);
+  /* sanitizeActiveWhen 判断激活路由方法 */
   registration.activeWhen = sanitizeActiveWhen(registration.activeWhen);
 
   return registration;
@@ -445,14 +454,18 @@ function sanitizeActiveWhen(activeWhen) {
       ? activeWhenOrPath
       : pathToActiveWhen(activeWhenOrPath)
   );
+  console.log('🚀 ~ sanitizeActiveWhen ~ activeWhenArray:', activeWhenArray)
 
   return (location) =>
     activeWhenArray.some((activeWhen) => activeWhen(location));
+    /* 
+    激活路由数组函数内，匹配一项校验路由函数匹配当前的location
+    */
 }
 
 export function pathToActiveWhen(path, exactMatch) {
   const regex = toDynamicPathValidatorRegex(path, exactMatch);
-
+  /*regex:正则匹配命中路由地址 /^\/app-vue-history(\/.*)?(#.*)?$/i */
   return (location) => {
     // compatible with IE10
     let origin = location.origin;

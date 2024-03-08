@@ -35,6 +35,7 @@ export function getProps(appOrParcel) {
   if (isParcel(appOrParcel)) {
     result.unmountSelf = appOrParcel.unmountThisParcel;
   }
-
+  
+  console.log('🚀 ~ getProps ~ result:', result)
   return result;
 }

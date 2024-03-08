@@ -85,6 +85,13 @@ function prefetch(entry, opts) {
 
 /*
 第一次挂载后的预加载
+例如：当第一个子应用一个mount挂载后，single-spa会派发事件：window.dispatchEvent(new CustomEvent("single-spa:first-mount"));
+这时候qiankun，可以监听到这个事件，同时做相对应的资源预加载
+
+同时全局的window.addEventListener监听事件，都被single-spa重写了(只拦截popstate，与hashchange事件)
+重写window.addEventListener => 
+const originalAddEventListener = window.addEventListener;
+window.addEventListener = function(){} //这里就重写了window.addEventListener 
 */
 function prefetchAfterFirstMounted(apps, opts) {
   window.addEventListener('single-spa:first-mount', function listener() {

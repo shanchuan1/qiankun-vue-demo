@@ -32,6 +32,7 @@ export function toBootstrapPromise(appOrParcel, hardFail) {
       return Promise.resolve().then(successfulBootstrap);
     }
 
+    /* 执行子应用的bootstrap生命周期函数 */
     return reasonableTime(appOrParcel, "bootstrap")
       .then(successfulBootstrap)
       .catch((err) => {

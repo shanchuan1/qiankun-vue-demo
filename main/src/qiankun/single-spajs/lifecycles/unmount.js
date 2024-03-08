@@ -10,6 +10,9 @@ import { handleAppError, transformErr } from "../applications/app-errors.js";
 import { reasonableTime } from "../applications/timeouts.js";
 import { addProfileEntry } from "../devtools/profiler.js";
 
+const __PROFILE__ = true
+
+/* 准备卸载app函数 */
 export function toUnmountPromise(appOrParcel, hardFail) {
   return Promise.resolve().then(() => {
     if (appOrParcel.status !== MOUNTED) {

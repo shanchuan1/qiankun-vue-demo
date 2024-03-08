@@ -101,6 +101,7 @@ function createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceI
  */
 function getRender(appInstanceId, appContent, legacyRender) {
     const render = ({ element, loading, container }, phase) => {
+        console.log('🚀 ~ render ~ phase:', phase)
         if (legacyRender) {
             if (process.env.NODE_ENV === 'development') {
                 console.error(
@@ -341,7 +342,23 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
     });
     console.log('🚀 ~ loadApp ~ scriptExports:', scriptExports)
 
-    /* 从子应用的导出获取生命周期 */
+    /* 从子应用的导出获取生命周期 
+    export async function bootstrap() {
+        console.log('vue app bootstraped');
+    }
+
+    export async function mount(props) {
+        console.log('props from main framework', props);
+        render(props);
+    }
+
+    export async function unmount() {
+        instance.$destroy();
+        instance.$el.innerHTML = "";
+        instance = null;
+        router = null;
+    }
+    */
     const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
         scriptExports,
         appName,
@@ -352,7 +369,29 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
     const { onGlobalStateChange, setGlobalState, offGlobalStateChange } = getMicroAppStateActions(appInstanceId);
 
     const syncAppWrapperElement2Sandbox = (element) => (initialAppWrapperElement = element);
-    /* 包裹配置 */
+    /* 包裹配置,返回子应用的生命周期函数与需共享的数据 
+    1. 在registerMicroApps方法的registerApplication这个API会注入loadAPP函数
+    app: async () => {
+                loader(true);
+                await frameworkStartedDefer.promise;
+             
+                const { mount, ...otherMicroAppConfigs } = (
+                    await loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles)
+                    
+                )();
+                return {
+                    mount: [async () => loader(true), ...toArray(mount), async () => loader(false)],
+                    ...otherMicroAppConfigs,
+                };
+            },
+
+    2. 在single-spa的API ==> toLoadPromise中 
+    const loadPromise = appOrParcel.loadApp(getProps(appOrParcel));调用的就是此传入的loadApp
+
+    3. parcelConfig.mount 共享在 single-spa的 appOrParcel.mount
+
+    所以在，single-spa中，调用loadAPP方法就可以共享访问 parcelConfigGetter返回的 parcelConfig这些配置了
+    */
     const parcelConfigGetter = (remountContainer = initialContainer) => {
         let appWrapperElement;
         let appWrapperGetter;
@@ -362,6 +401,7 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
             bootstrap,
             mount: [
                 async () => {
+                    console.log('1111');
                     if (process.env.NODE_ENV === 'development') {
                         const marks = performanceGetEntriesByName(markName, 'mark');
                         if (marks && !marks.length) {
@@ -370,6 +410,7 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
                     }
                 },
                 async () => {
+                    console.log('2222');
                     if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
                         return prevAppUnmountedDeferred.promise;
                     }
@@ -377,6 +418,7 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
                     return undefined;
                 },
                 async () => {
+                    console.log('3333');
                     appWrapperElement = initialAppWrapperElement;
                     appWrapperGetter = getAppWrapperGetter(
                         appInstanceId,
@@ -387,6 +429,7 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
                     );
                 },
                 async () => {
+                    console.log('4444');
                     const useNewContainer = remountContainer !== initialContainer;
                     if (useNewContainer || !appWrapperElement) {
                         appWrapperElement = createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceId);
@@ -417,6 +460,7 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
                 async (props) => unmount({ ...props, container: appWrapperGetter() }),
                 unmountSandbox,
                 async () => execHooksChain(toArray(afterUnmount), app, global),
+                /* 子应用卸载 */
                 async () => {
                     render({ element: null, loading: false, container: remountContainer }, 'unmounted');
                     offGlobalStateChange(appInstanceId);

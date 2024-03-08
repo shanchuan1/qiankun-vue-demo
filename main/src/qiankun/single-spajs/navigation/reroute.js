@@ -67,14 +67,19 @@ export function reroute(
     }
   }
 
+  /* 获取注册的子应用的当前的状态change （卸载，准备卸载，准备挂载， 挂载） */
   const { appsToUnload, appsToUnmount, appsToLoad, appsToMount } =
     getAppChanges();
+  console.log('🚀 ~ appsToUnload, appsToUnmount, appsToLoad, appsToMount:', appsToUnload, appsToUnmount, appsToLoad, appsToMount)
+
   let appsThatChanged,
     cancelPromises = [],
     oldUrl = currentUrl,
     newUrl = (currentUrl = window.location.href);
-
+    
+  console.log('🚀 ~ isStarted():', isStarted())
   if (isStarted()) {
+    /* 注册子应用后已经执行了start */
     appChangeUnderway = true;
     appsThatChanged = appsToUnload.concat(
       appsToLoad,
@@ -83,9 +88,11 @@ export function reroute(
     );
     return performAppChanges();
   } else {
+    /* 注册子应用后还未执行start */
     appsThatChanged = appsToLoad;
     return loadApps();
   }
+
 
   function cancelNavigation(val = true) {
     const promise =
@@ -149,6 +156,13 @@ export function reroute(
     });
   }
 
+
+/* 
+1. 派发两个事件fireSingleSpaEvent，通知全局目前进度流程(全局可监听访问，对应时机做对应的处理)
+2. 先将需要卸载的apps执行完
+3. 
+
+*/
   function performAppChanges() {
     return Promise.resolve().then(() => {
       // https://github.com/single-spa/single-spa/issues/545
@@ -198,7 +212,9 @@ export function reroute(
         }
 
         const unloadPromises = appsToUnload.map(toUnloadPromise);
+        console.log('🚀 ~ returnPromise.all ~ unloadPromises:', unloadPromises)
 
+        /* appsToUnmount：准备卸载的app数组 循环去卸载 最终返回卸载成功的异步结果值*/
         const unmountUnloadPromises = appsToUnmount
           .map(toUnmountPromise)
           .map((unmountPromise) => unmountPromise.then(toUnloadPromise));
@@ -210,7 +226,9 @@ export function reroute(
         let unmountFinishedTime;
 
         unmountAllPromise.then(
-          () => {
+          (unmountAllPromiseValue) => {
+            /* 做调试查看卸载的app */
+            console.log('🚀 ~ returnPromise.all ~ unmountAllPromiseValue:', unmountAllPromiseValue)
             if (__PROFILE__) {
               unmountFinishedTime = performance.now();
 
@@ -246,40 +264,55 @@ export function reroute(
 
         /* We load and bootstrap apps while other apps are unmounting, but we
          * wait to mount the app until all apps are finishing unmounting
+         * 当其他app卸载时，加载app 
+         * 当其他app完成卸载的时候，才会挂载这个app
          */
         const loadThenMountPromises = appsToLoad.map((app) => {
+          /* toLoadPromise ： 将子应用拉取挂载完dom容器后，并且把子应用的生命周期的一些信息与方法暴露出来，便于控制 */
           return toLoadPromise(app).then((app) =>
             tryToBootstrapAndMount(app, unmountAllPromise)
           );
         });
+        console.log('🚀 ~ loadThenMountPromises ~ loadThenMountPromises:', loadThenMountPromises)
 
         /* These are the apps that are already bootstrapped and just need
          * to be mounted. They each wait for all unmounting apps to finish up
          * before they mount.
+         * 这些应用程序已经启动，只需要
+         * 待安装。他们每个人都在等待所有卸载的应用程序完成
+         * 在它们安装之前。
          */
         const mountPromises = appsToMount
           .filter((appToMount) => appsToLoad.indexOf(appToMount) < 0)
           .map((appToMount) => {
             return tryToBootstrapAndMount(appToMount, unmountAllPromise);
           });
+        console.log('🚀 ~ returnPromise.all ~ mountPromises:', mountPromises)
+        
         return unmountAllPromise
           .catch((err) => {
             callAllEventListeners();
             throw err;
           })
-          .then(() => {
+          .then((unmountAllPromiseValue2) => {
             /* Now that the apps that needed to be unmounted are unmounted, their DOM navigation
              * events (like hashchange or popstate) should have been cleaned up. So it's safe
              * to let the remaining captured event listeners to handle about the DOM event.
              */
             callAllEventListeners();
+            /* 做调试查看卸载的app2 */
+            console.log('🚀 ~ returnPromise.all ~ unmountAllPromiseValue2:', unmountAllPromiseValue2)
 
             return Promise.all(loadThenMountPromises.concat(mountPromises))
               .catch((err) => {
                 pendingPromises.forEach((promise) => promise.reject(err));
                 throw err;
               })
-              .then(finishUpAndReturn)
+              .then((loadThenMountPromisesValue) => {
+                 /* 做调试查看需要加载的app */
+                console.log('🚀 ~ .then ~ loadThenMountPromisesValue:', loadThenMountPromisesValue)
+                return  finishUpAndReturn()
+              })
               .then(
                 () => {
                   if (__PROFILE__) {
@@ -314,6 +347,7 @@ export function reroute(
   }
 
   function finishUpAndReturn() {
+    /*  */
     const returnValue = getMountedApps();
     pendingPromises.forEach((promise) => promise.resolve(returnValue));
 
@@ -412,6 +446,7 @@ export function reroute(
     if (extraProperties) {
       assign(result.detail, extraProperties);
     }
+    // isStarted() && console.log('🚀 ~ getCustomEventDetail ~ result:', result)
 
     return result;
 
@@ -442,12 +477,19 @@ export function reroute(
  * this means that we shouldn't bootstrap and mount that application, thus we check
  * twice if that application should be active before bootstrapping and mounting.
  * https://github.com/single-spa/single-spa/issues/524
+ * 
+ *  让我们想象一下，在应用程序加载过程中发生了某种延迟。
+    用户在不等待应用加载的情况下切换到另一个路由，
+    这意味着我们不应该引导和装载该应用程序，因此我们检查
+    两次，如果该应用程序在引导和装载之前应该处于活动状态。
  */
 function tryToBootstrapAndMount(app, unmountAllPromise) {
   if (shouldBeActive(app)) {
+    /* toBootstrapPromise： 执行子应用的生命周期函数 bootstrap*/
     return toBootstrapPromise(app).then((app) =>
       unmountAllPromise.then(() =>
-        shouldBeActive(app) ? toMountPromise(app) : app
+       /* toMountPromise 执行子应用的生命周期函数 mount*/
+       shouldBeActive(app) ? toMountPromise(app) : app
       )
     );
   } else {

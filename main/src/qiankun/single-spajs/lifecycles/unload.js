@@ -10,6 +10,7 @@ import { handleAppError } from "../applications/app-errors.js";
 import { reasonableTime } from "../applications/timeouts.js";
 import { addProfileEntry } from "../devtools/profiler.js";
 
+const __PROFILE__ = true
 const appsToUnload = {};
 
 export function toUnloadPromise(appOrParcel) {

@@ -12,6 +12,8 @@ import {
 import { reasonableTime } from "../applications/timeouts.js";
 import { addProfileEntry } from "../devtools/profiler.js";
 
+const __PROFILE__ = true
+
 export function toUpdatePromise(appOrParcel) {
   return Promise.resolve().then(() => {
     let startTime, profileEventType;

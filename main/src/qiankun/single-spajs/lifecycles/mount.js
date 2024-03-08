@@ -37,6 +37,7 @@ export function toMountPromise(appOrParcel, hardFail) {
 
     appOrParcel.status = MOUNTING;
 
+    /* 执行子应用的mount生命周期函数 qiankun共享了十个mount的钩子函数，每一个都会执行 */
     return reasonableTime(appOrParcel, "mount")
       .then(() => {
         appOrParcel.status = MOUNTED;

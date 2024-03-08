@@ -3,6 +3,24 @@ import { find } from "../utils/find.js";
 import { formatErrorMessage } from "../applications/app-errors.js";
 import { isInBrowser } from "../utils/runtime-environment.js";
 
+
+/* 做调试func */
+function createCacheFunction() {
+  let cache = {};
+  return function(key, value) {
+    if (value !== undefined) {
+      // 设置缓存值
+      cache[key] = value;
+    } else {
+      // 获取缓存值
+      return cache[key];
+    }
+  };
+}
+// 创建缓存函数
+const cacheFunction = createCacheFunction();
+
+
 /* We capture navigation event listeners so that we can make sure
  * that application navigation listeners are not called until
  * single-spa has ensured that the correct applications are
@@ -89,13 +107,30 @@ function urlReroute() {
 function patchedUpdateState(updateState, methodName) {
   return function () {
     const urlBefore = window.location.href;
+    const urlBeforePathName = window.location.pathname;
+    /* 一般vue路由切换触发时pushState
+    updateState 即调用 window.history.pushState
+    执行完updateState.apply(this, arguments)后，pushState事件会触发下面
+    window.addEventListener("popstate", urlReroute);事件
+    即路由变化，会执行urlReroute，开始路由重导
+    */
     const result = updateState.apply(this, arguments);
     const urlAfter = window.location.href;
+    const urlAfterPathName = window.location.pathname;
+
+    cacheFunction('url', {urlBeforePathName, urlAfterPathName})
 
     if (!urlRerouteOnly || urlBefore !== urlAfter) {
+      /* 
+      启动一个人工popstate事件，
+      以便单一spa应用程序知道路由
+      发生在不同的应用程序中
+      */
       // fire an artificial popstate event so that
       // single-spa applications know about routing that
       // occurs in a different application
+
+      /* 改变了路由地址，派发一个新的popstate事件 这样新的popstate事件可外面监听调用*/
       window.dispatchEvent(
         createPopStateEvent(window.history.state, methodName)
       );
@@ -105,6 +140,7 @@ function patchedUpdateState(updateState, methodName) {
   };
 }
 
+/* 创建一个模拟的 popstate 事件  监听history.pushState()，history.replaceState() 浏览器的历史状态发生变化时触发的事件*/
 function createPopStateEvent(state, originalMethodName) {
   // https://github.com/single-spa/single-spa/issues/224 and https://github.com/single-spa/single-spa-angular/issues/49
   // We need a popstate event even though the browser doesn't do one by default when you call replaceState, so that
@@ -112,8 +148,10 @@ function createPopStateEvent(state, originalMethodName) {
   // singleSpaTrigger=<pushState|replaceState> on the event instance.
   let evt;
   try {
+    /* 创建一个模拟的 popstate 事件 */
     evt = new PopStateEvent("popstate", { state });
   } catch (err) {
+    /* 兼容ie11 创建popstate事件 */
     // IE 11 compatibility https://github.com/single-spa/single-spa/issues/299
     // https://docs.microsoft.com/en-us/openspecs/ie_standards/ms-html5e/bd560f47-b349-4d2c-baa8-f1560fb489dd
     evt = document.createEvent("PopStateEvent");
@@ -160,7 +198,12 @@ export function patchHistoryApi(opts) {
   /* 监听 hashchange 和 popstate 事件，当 URL 发生变化时触发重新路由， 这样 single-spa 就能够处理相应的路由变化 */
   // We will trigger an app change for any routing events.
   window.addEventListener("hashchange", urlReroute);
-  window.addEventListener("popstate", urlReroute);
+  // window.addEventListener("popstate", urlReroute);
+  window.addEventListener("popstate", ()=>{
+   urlReroute()
+   const {urlBeforePathName, urlAfterPathName} = cacheFunction('url')
+    console.log(`-------监听到父子应用路由中发生变化-------\n urlBefore:${urlBeforePathName} \n urlAfter:${urlAfterPathName} \n 重导路由`);
+  });
 
   // Monkeypatch addEventListener so that we can ensure correct timing
   const originalAddEventListener = window.addEventListener;
@@ -186,6 +229,7 @@ export function patchHistoryApi(opts) {
       }
     }
 
+     /* 其他的事件就用原生的去执行 */
     return originalAddEventListener.apply(this, arguments);
   };
   window.removeEventListener = function (eventName, listenerFn) {
@@ -237,3 +281,5 @@ function parseUri(str) {
   anchor.href = str;
   return anchor;
 }
+
+

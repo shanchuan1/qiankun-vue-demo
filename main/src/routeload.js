@@ -40,15 +40,45 @@ console.log("监听url地址11111");
 //       JSON.stringify(popstateEvent.type) 
 //   );
 // };
-// 监听 popstate 事件
+
+/* 
+  主应用改写replaceState与pushState事件
+*/
+// window.history.pushState = () =>{
+//   console.log('测试子应用vue-router切换路由是否是调用这个pushState事件');
+// }
+
+// window.history.replaceState = () =>{
+//   console.log('测试子应用vue-router切换路由是否是调用这个replaceState事件');
+// }
+
+/* 
+监听 popstate 事件
+原本的popstate事件被single-spa拦截重写了
+外部能监听到的popstate事件，是single-spa重新派发的一个新popstate的事件
+single-spa监听的是history.replaceState事件（vue-router的路由切换触发的就是pushState与replaceState事件）
+判断两次路由发生了变化如： http://localhost:8080/app-vue-history/about ===> http://localhost:8080/app-vue-history/
+便会派发一个新popstate的事件
+window.dispatchEvent(createPopStateEvent(window.history.state, methodName));
+*/
+// 主应用监听到的popstate事件就是被派发的新popstate的事件
+// 注意：如果主应用改写了pushState与replaceState事件，那么子应用监听的popstate事件就不是来自与single-spa派发的了
+// 浏览器窗口的前进与后退仍然可以触发popstate事件
 window.addEventListener('popstate', function(event) {
     console.log('🚀 ~ window.addEventListener ~ event:', event)
+    /* 
+    event包含single-spa重写派发事件内的标识属性
+    {
+      singleSpa:true
+      singleSpaTrigger: replaceState
+    }
+    */
     console.log((
         "location: " +
           window.location +
           ", state: " +
-          JSON.stringify(popstateEvent.state) +
-          JSON.stringify(popstateEvent.type) 
+          JSON.stringify(event.state) +
+          JSON.stringify(event.type) 
       ));
   });
 /* 
@@ -65,3 +95,36 @@ window.addEventListener('popstate', function(event) {
 
 */
 start();
+
+
+
+/* 
+路由式注册
+1. 如果registerMicroApps与start都调用了，但是location路由地址未匹配到activeRule: "/app-vue-history"，那么子应用就未被拉取挂载
+
+
+bug: {
+  子应用卸载 /app-vue-history/about 切入主应用的/about  (mabye 主子应用都存在/about的路由，发生了错误)
+  会把子应用的/app-vue-history/about路由的内容 渲染到主应用about的容器</router-view>内
+}
+*/
+
+
+/* 
+/app-vue-history地址 
+1. 在子应用是渲染页面，达到局部更新
+2. 在父应用是拉取子应用资源（html,js）
+*/
+
+/* 路由变化，生命周期变化
+1. 父 ==> 子
+2. 子 ==> 子
+3. 子 ==> 父
+子应用从已挂载到卸载阶段流程:
+根据single-spa重写的pushState触发重写的popstate事件，(这个时候路由已经发生改变，离开了与子应用配对的路由),然后触发reroute()
+这里首先会调用getAppChanges()判断此子应用下一步的状态，并且推送到对应状态需处理的准备卸载数组(appsToUnmount)
+先调用toUnmountPromise函数处理准备卸载的app，同时修改app的状态为SKIP_BECAUSE_BROKEN，最后调用toUnloadPromise函数，返回appOrParcel
+最终调用的是qiankun中loadApp函数返回的parcelConfig.unmount函数去卸载，把挂载子应用的目标容器dom的子级元素移除(带有qiankun标识的div)
+(可以理解为卸载与挂载能力是qiankun传入提供给single-spa)
+最终把appOrParcel.status = NOT_MOUNTED
+*/

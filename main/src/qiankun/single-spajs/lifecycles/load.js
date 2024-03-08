@@ -23,7 +23,34 @@ import { addProfileEntry } from "../devtools/profiler.js";
 
 const __PROFILE__ = true
 
+
+
+/* 
+appOrParcel.loadApp()
+调用qiankun注册子应用registerApplication传入的loadApp函数
+        这个时候就会去拉取资源并挂载好dom容器了
+
+最后给appOrParcel组装挂载新属性返回 ，并且删除appOrParcel.loadPromise属性
+  appOrParcel = {
+                  ...appOrParcel,
+                  status : NOT_BOOTSTRAPPED;   // 修改状态
+                  bootstrap : flattenFnArray(appOpts, "bootstrap");  // appOpts为loadAPP调用后返回的值
+                  mount : flattenFnArray(appOpts, "mount");
+                  unmount : flattenFnArray(appOpts, "unmount");
+                  unload : flattenFnArray(appOpts, "unload");
+                  timeouts : ensureValidAppTimeouts(appOpts.timeouts);
+                }
+
+  appOpts = {
+    bootstrap :  ƒ bootstrap()
+    mount :  (13) [ƒ, ƒ, ƒ, ƒ, ƒ, ƒ, ƒ, ƒ, ƒ, ƒ, ƒ, ƒ, ƒ]
+    name : "app-vue-history"
+    unmount : (6) [ƒ, ƒ, ƒ, ƒ, ƒ, ƒ]
+  }              
+相当于将子应用拉取挂载完dom容器后，并且把子应用的生命周期的一些信息与方法暴露出来，便于控制
+*/
 export function toLoadPromise(appOrParcel) {
+  console.log('🚀 ~ toLoadPromise ~ appOrParcel:', appOrParcel)
   return Promise.resolve().then(() => {
     if (appOrParcel.loadPromise) {
       return appOrParcel.loadPromise;
@@ -48,6 +75,23 @@ export function toLoadPromise(appOrParcel) {
 
     return (appOrParcel.loadPromise = Promise.resolve()
       .then(() => {
+        /* 
+        appOrParcel.loadApp: 调用的就是qiankun注册子应用registerApplication传入的loadApp函数
+        这个时候就会去拉取资源并挂载好dom容器了
+
+       appOrParcel.loadApp为 : async () => {
+                                  loader(true);
+                                  await frameworkStartedDefer.promise;
+                                  const { mount, ...otherMicroAppConfigs } = (
+                                      await loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles)
+                                      
+                                  )();
+                                  return {
+                                      mount: [async () => loader(true), ...toArray(mount), async () => loader(false)],
+                                      ...otherMicroAppConfigs,
+                                  };
+        loadPromise : 是异步的一个结果值， 所以需要.then获取到这个结果值对象        
+        */
         const loadPromise = appOrParcel.loadApp(getProps(appOrParcel));
         if (!smellsLikeAPromise(loadPromise)) {
           // The name of the app will be prepended to this error message inside of the handleAppError function
