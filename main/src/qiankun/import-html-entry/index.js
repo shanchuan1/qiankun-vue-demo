@@ -62,6 +62,7 @@ function getExecutableScript(scriptSrc, scriptText, opts = {}) {
 	// 通过这种方式获取全局 window，因为 script 也是在全局作用域下运行的，所以我们通过 window.proxy 绑定时也必须确保绑定到全局 window 上
 	// 否则在嵌套场景下， window.proxy 设置的是内层应用的 window，而代码其实是在全局作用域运行的，会导致闭包里的 window.proxy 取的是最外层的微应用的 proxy
 	const globalWindow = (0, eval)('window');
+	/* 将当前沙箱容器中被proxy代理的假window对象(fakeWindow) 赋值给window.proxy 这样可让全局访问*/
 	globalWindow.proxy = proxy;
 	// TODO 通过 strictGlobal 方式切换 with 闭包，待 with 方式坑趟平后再合并
 	return strictGlobal
@@ -169,6 +170,11 @@ export function execScripts(entry, scripts, proxy = window, opts = {}) {
 
 			const geval = (scriptSrc, inlineScript) => {
 				const rawCode = beforeExec(inlineScript, scriptSrc) || inlineScript;
+				/* 
+				getExecutableScript方法
+				1. 将当前沙箱容器中被proxy代理的假window对象(fakeWindow) 赋值给window.proxy 这样可让全局访问
+				2. scopedGlobalVariables全局作用域的变量数组拼接为string注入inlineScript代码字符串中执行
+				*/
 				const code = getExecutableScript(scriptSrc, rawCode, { proxy, strictGlobal, scopedGlobalVariables });
 
 				/* 执行代码 */
@@ -188,11 +194,17 @@ export function execScripts(entry, scripts, proxy = window, opts = {}) {
 				}
 
 				if (scriptSrc === entry) {
+					console.log('🚀 ~ proxy1 ~ proxy:', proxy)
 					noteGlobalProps(strictGlobal ? proxy : window);
 
+					/* 调试代码：查看noteGlobalProps执行当前沙箱容器中被proxy代理的假window对象(fakeWindow) 新赋的属性 */
+					console.log('🚀 ~ noteGlobalProps ~ proxy:', proxy)
 					try {
 						geval(scriptSrc, inlineScript);
+						const resGlobalProp = getGlobalProp(strictGlobal ? proxy : window)
+						console.log('🚀 ~ resGlobalProp :', resGlobalProp)
 						const exports = proxy[getGlobalProp(strictGlobal ? proxy : window)] || {};
+						console.log('🚀 ~ proxy2 ~ proxy:', proxy)
 						resolve(exports);
 					} catch (e) {
 						// entry error must be thrown to make the promise settled
@@ -294,6 +306,8 @@ export default function importHTML(url, opts = {}) {
 					if (!scripts.length) {
 						return Promise.resolve();
 					}
+					console.log('🚀 ~ qiankun调用execScripts传入的 ~', proxy, strictGlobal, opts)
+					console.log('🚀 ~ importHTML返回execScripts内部接受的 ~', entry, scripts)
 					return execScripts(entry, scripts, proxy, {
 						fetch,
 						strictGlobal,

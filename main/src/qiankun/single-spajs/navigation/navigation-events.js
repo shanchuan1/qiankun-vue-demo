@@ -89,8 +89,10 @@ function urlReroute() {
 function patchedUpdateState(updateState, methodName) {
   return function () {
     const urlBefore = window.location.href;
+    console.log('🚀 ~ urlBefore:', urlBefore)
     const result = updateState.apply(this, arguments);
     const urlAfter = window.location.href;
+    console.log('🚀 ~ urlAfter:', urlAfter)
 
     if (!urlRerouteOnly || urlBefore !== urlAfter) {
       // fire an artificial popstate event so that

@@ -118,12 +118,23 @@ function createFakeWindow(globalContext, speedy) {
        */
     Object.getOwnPropertyNames(globalContext)
         .filter((p) => {
+            /* 
+            ，使用了 Object.getOwnPropertyDescriptor() 方法来获取属性的描述符
+            如果属性描述符中的 configurable 属性为 false，则说明该属性不可配置，
+            也就是无法通过 delete 操作符删除，也无法通过 defineProperty 方法修改其属性描述符。
+            在这种情况下，这些不可配置的属性会被保留在结果数组中
+            */
             const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
             return !descriptor?.configurable;
         })
         .forEach((p) => {
+            /* 
+            不可配置的属性进行遍历
+            通过 Object.getOwnPropertyDescriptor() 方法获取属性的描述符
+            */
             const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
             if (descriptor) {
+                /* 检查描述符中是否有 get 方法，以确定属性是否是一个访问器属性（即具有 getter 方法） */
                 const hasGetter = Object.prototype.hasOwnProperty.call(
                     descriptor,
                     "get"
@@ -143,224 +154,80 @@ function createFakeWindow(globalContext, speedy) {
                     (p === "document" && speedy) ||
                     (inTest && (p === mockTop || p === mockSafariTop))
                 ) {
+                    /* 
+                     在这些特殊条件对特定属性进行配置更改
+                     configurable 设置为 true
+                    */
                     descriptor.configurable = true;
                     /*
                        The descriptor of window.window/window.top/window.self in Safari/FF are accessor descriptors, we need to avoid adding a data descriptor while it was
                        Example:
                         Safari/FF: Object.getOwnPropertyDescriptor(window, 'top') -> {get: function, set: undefined, enumerable: true, configurable: false}
                         Chrome: Object.getOwnPropertyDescriptor(window, 'top') -> {value: Window, writable: false, enumerable: true, configurable: false}
-                       */
+                    */
+                    /* 
+                    如果属性描述符不具有 getter 方法，它还将 writable 设置为 true，以确保该属性可以被修改
+                    */
                     if (!hasGetter) {
                         descriptor.writable = true;
                     }
                 }
 
+                /* 
+                如果属性描述符中存在 getter 方法，则将该属性添加到 propertiesWithGetter 集合中。
+                */
                 if (hasGetter) propertiesWithGetter.set(p, true);
 
                 // freeze the descriptor to avoid being modified by zone.js
                 // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71
+                // 冻结了属性描述符，以防止被外部库（如 Zone.js）修改。
                 rawObjectDefineProperty(fakeWindow, p, Object.freeze(descriptor));
             }
         });
 
     return {
+        /* 
+        假的 window 对象 fakeWindow 和具有 getter 方法的属性名称集合 propertiesWithGetter
+        */
         fakeWindow,
         propertiesWithGetter,
+        /* propertiesWithGetter集合Map
+        [
+            {
+                "key": "window",
+                "value": true
+            },
+            {
+                "key": "document",
+                "value": true
+            },
+            {
+                "key": "location",
+                "value": true
+            },
+            {
+                "key": "top",
+                "value": true
+            },
+            {
+                "key": "__VUE_DEVTOOLS_GLOBAL_HOOK__",
+                "value": true
+            }
+        ]
+        */
     };
 }
 
 let activeSandboxCount = 0;
 
-
 /**
  * 基于 Proxy 实现的沙箱
  */
-// export default class ProxySandbox {
-//     /** window 值变更记录 */
-//     updatedValueSet = new Set();
-//     document = document;
-//     name;
-//     type;
-//     proxy;
-//     sandboxRunning = true;
-//     latestSetProp = null;
-
-//     active() {
-//         if (!this.sandboxRunning)
-//             activeSandboxCount++;
-//         this.sandboxRunning = true;
-//     }
-
-//     inactive() {
-//         if (process.env.NODE_ENV === 'development') {
-//             console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
-//                 ...this.updatedValueSet.keys(),
-//             ]);
-//         }
-
-//         if (inTest || --activeSandboxCount === 0) {
-//             // reset the global value to the prev value
-//             Object.keys(this.globalWhitelistPrevDescriptor).forEach((p) => {
-//                 const descriptor = this.globalWhitelistPrevDescriptor[p];
-//                 if (descriptor) {
-//                     Object.defineProperty(this.globalContext, p, descriptor);
-//                 } else {
-//                     delete this.globalContext[p];
-//                 }
-//             });
-//         }
-
-//         this.sandboxRunning = false;
-//     }
-
-//     patchDocument(doc) {
-//         this.document = doc;
-//     }
-
-//     constructor(name, globalContext = window, opts) {
-//         this.updatedValueSet = new Set();
-//         this.document = document;
-//         this.sandboxRunning = true;
-//         this.latestSetProp = null;
-//         this.globalWhitelistPrevDescriptor = {};
-//         this.name = name;
-//         this.globalContext = globalContext;
-//         this.type = 'Proxy';
-//         const { speedy } = opts || {};
-//         const { fakeWindow, propertiesWithGetter } = createFakeWindow(globalContext, !!speedy);
-//         const descriptorTargetMap = new Map();
-//         const proxy = new Proxy(fakeWindow, {
-//             set: function (target, p, value) {
-//                 if (this.sandboxRunning) {
-//                     // this.registerRunningApp(name, proxy);
-//                     registerRunningApp(name, proxy);
-//                     if (typeof p === 'string' && globalVariableWhiteList.indexOf(p) !== -1) {
-//                         this.globalWhitelistPrevDescriptor[p] = Object.getOwnPropertyDescriptor(globalContext, p);
-//                         globalContext[p] = value;
-//                     } else {
-//                         if (!target.hasOwnProperty(p) && globalContext.hasOwnProperty(p)) {
-//                             const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
-//                             const { writable, configurable, enumerable, set } = descriptor || {};
-//                             if (writable || set) {
-//                                 Object.defineProperty(target, p, { configurable, enumerable, writable: true, value });
-//                             }
-//                         } else {
-//                             target[p] = value;
-//                         }
-//                     }
-//                     this.updatedValueSet.add(p);
-//                     this.latestSetProp = p;
-//                     return true;
-//                 }
-//                 if (process.env.NODE_ENV === 'development') {
-//                     console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
-//                 }
-//                 return true;
-//             },
-//             get: function (target, p) {
-//                 console.log('this', this);
-//                 this.registerRunningApp(name, proxy);
-//                 if (p === Symbol.unscopables)
-//                     return unscopables;
-//                 if (p === 'window' || p === 'self')
-//                     return proxy;
-//                 if (p === 'globalThis' || (inTest && p === mockGlobalThis))
-//                     return proxy;
-//                 if (p === 'top' || p === 'parent' || (inTest && (p === mockTop || p === mockSafariTop))) {
-//                     if (globalContext === globalContext.parent)
-//                         return proxy;
-//                     return globalContext[p];
-//                 }
-//                 if (p === 'hasOwnProperty')
-//                     return hasOwnProperty;
-//                 if (p === 'document')
-//                     return this.document;
-//                 if (p === 'eval')
-//                     return eval;
-//                 if (p === 'string' && globalVariableWhiteList.indexOf(p) !== -1)
-//                     return globalContext[p];
-//                 const actualTarget = propertiesWithGetter.has(p) ? globalContext : p in target ? target : globalContext;
-//                 const value = actualTarget[p];
-//                 if (isPropertyFrozen(actualTarget, p))
-//                     return value;
-//                 if (!isNativeGlobalProp(p) && !useNativeWindowForBindingsProps.has(p))
-//                     return value;
-//                 const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : globalContext;
-//                 return rebindTarget2Fn(boundTarget, value);
-//             },
-//             has: function (target, p) {
-//                 return p in cachedGlobalObjects || p in target || p in globalContext;
-//             },
-//             getOwnPropertyDescriptor: function (target, p) {
-//                 if (target.hasOwnProperty(p)) {
-//                     const descriptor = Object.getOwnPropertyDescriptor(target, p);
-//                     descriptorTargetMap.set(p, 'target');
-//                     return descriptor;
-//                 }
-//                 if (globalContext.hasOwnProperty(p)) {
-//                     const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
-//                     descriptorTargetMap.set(p, 'globalContext');
-//                     if (descriptor && !descriptor.configurable)
-//                         descriptor.configurable = true;
-//                     return descriptor;
-//                 }
-//                 return undefined;
-//             },
-//             ownKeys: function (target) {
-//                 return uniq(Reflect.ownKeys(globalContext).concat(Reflect.ownKeys(target)));
-//             },
-//             defineProperty: function (target, p, attributes) {
-//                 const from = descriptorTargetMap.get(p);
-//                 switch (from) {
-//                     case 'globalContext':
-//                         return Reflect.defineProperty(globalContext, p, attributes);
-//                     default:
-//                         return Reflect.defineProperty(target, p, attributes);
-//                 }
-//             },
-//             deleteProperty: function (target, p) {
-//                 this.registerRunningApp(name, proxy);
-//                 if (target.hasOwnProperty(p)) {
-//                     delete target[p];
-//                     updatedValueSet.delete(p);
-//                     return true;
-//                 }
-//                 return true;
-//             },
-//             getPrototypeOf: function () {
-//                 return Reflect.getPrototypeOf(globalContext);
-//             },
-//         });
-//         this.proxy = proxy;
-//         activeSandboxCount++;
-//         function hasOwnProperty(key) {
-//             if (this !== proxy && this !== null && typeof this === 'object') {
-//                 return Object.prototype.hasOwnProperty.call(this, key);
-//             }
-//             return fakeWindow.hasOwnProperty(key) || globalContext.hasOwnProperty(key);
-//         }
-//     }
-
-
-//     registerRunningApp(name, proxy) {
-//         if (this.sandboxRunning) {
-//             const currentRunningApp = getCurrentRunningApp();
-//             if (!currentRunningApp || currentRunningApp.name !== name) {
-//                 setCurrentRunningApp({ name, window: proxy });
-//             }
-//             // FIXME if you have any other good ideas
-//             // remove the mark in next tick, thus we can identify whether it in micro app or not
-//             // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-//             nextTask(clearCurrentRunningApp);
-//         }
-//     }
-// }
-
-
 export default class ProxySandbox {
     constructor(name, globalContext = window, opts) {
         this.updatedValueSet = new Set();
         this.document = document;
+        console.log('🚀 ~ ProxySandbox ~ constructor ~ document:', document)
         this.sandboxRunning = true;
         this.latestSetProp = null;
         this.type = undefined;
@@ -379,6 +246,7 @@ export default class ProxySandbox {
         const proxy = new Proxy(fakeWindow, {
             set: (target, p, value) => {
                 if (this.sandboxRunning) {
+                    /* 注册正在运行的app */
                     this.registerRunningApp(name, proxy);
 
                     // sync the property to globalContext
@@ -457,8 +325,13 @@ export default class ProxySandbox {
                     // @ts-ignore
                     return globalContext[p];
                 }
-
+                /* 判断假window对象上是否存在该访问器属性，同时该属性存在与假window对象上 */
                 const actualTarget = propertiesWithGetter.has(p) ? globalContext : p in target ? target : globalContext;
+                console.log('🚀 ~ get ~ actualTarget:', actualTarget)
+                /* 
+                p: webpackJsonp_app-vue-history, 
+                */
+                //actualTarget[p]会触发被proxy代理的假window对象的get方法
                 const value = actualTarget[p];
 
                 // frozen value should return directly, see https://github.com/umijs/qiankun/issues/2015

@@ -1,4 +1,5 @@
-import { importEntry } from 'import-html-entry';
+// import { importEntry } from 'import-html-entry';
+import { importEntry } from '../import-html-entry';
 import { concat, forEach, mergeWith } from 'lodash';
 import {
     Deferred,
@@ -38,6 +39,9 @@ function execHooksChain(
     global = window,
 ) {
     if (hooks.length) {
+        /* 循环执行异步函数
+        hooks例子：async beforeLoad() { global.__POWERED_BY_QIANKUN__ = true;},
+        */
         return hooks.reduce((chain, hook) => chain.then(() => hook(app, global)), Promise.resolve());
     }
 
@@ -308,21 +312,62 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
     let sandboxContainer;
     if (sandbox) {
         /* 生成应用运行的时的沙箱环境 */
+        /* 
+        sandboxContainer = {
+            instance: {  // 沙箱sandbox
+                document：document, 就是当前window下的document
+                globalContext: window, 就是createSandboxContainer函数传入的global
+                latestSetProp:  , 最后设置属性？
+                name: app-vue-history , 就是createSandboxContainer函数传入的appInstanceId
+                proxy: ,
+                sandboxRunning: true, 沙箱启动正在运行
+                type: "Proxy", 支持 Proxy 的浏览器
+                updatedValueSet: {size:0} Set属性
+            }
+            mount: () => {}
+            unmount: () => {}
+        }
+        */
+
         sandboxContainer = createSandboxContainer(
-            appInstanceId,
+            appInstanceId, // app-vue-history
             initialAppWrapperGetter,
-            scopedCSS,
-            useLooseSandbox,
+            scopedCSS,  // false
+            useLooseSandbox, // false 使用低级的沙箱 为了兼容性
             excludeAssetFilter,
-            global,
-            speedySandbox,
+            global,  // window
+            speedySandbox, //true
         );
-        global = sandboxContainer.instance.proxy; /* 将window的全局改为子应用沙箱容器的proxy */
+
+        /* 研究一下sandboxContainer.instance.proxy到底被定义为了什么？？？ */
+        global = sandboxContainer.instance.proxy; /* 将global改为沙箱容器中被proxy代理的假window对象(fakeWindow) */
+        /* 沙箱挂载 */
         mountSandbox = sandboxContainer.mount;
+        /* 沙箱卸载 */
         unmountSandbox = sandboxContainer.unmount;
         console.log('🚀 ~ sandboxContainer:', sandboxContainer);
     }
 
+    /* 
+    global: 沙箱容器中被proxy代理的假window对象(fakeWindow)
+    assetPublicPath：http://localhost:2222/ 子应用地址
+    lifeCycles：子应用生命周期
+    此方法会整合 
+    {
+        "beforeLoad": [
+            ƒ beforeLoad(),
+            ƒ beforeLoad()
+        ],
+        "beforeMount": [
+            ƒ beforeMount(),
+            ƒ beforeMount()
+        ],
+        "beforeUnmount": [
+            ƒ beforeUnmount(),
+            ƒ beforeUnmount()
+        ]
+    }
+    */
     const {
         beforeUnmount = [],
         afterUnmount = [],
@@ -331,9 +376,19 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
         beforeLoad = [],
     } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
 
-    console.log('🚀 ~ loadApp ~ beforeLoad:', beforeLoad)
+    /* 
+    global: 沙箱容器中被proxy代理的假window对象(fakeWindow)
+     此方法执行会给global 新增属性
+    {
+        __INJECTED_PUBLIC_PATH_BY_QIANKUN__ :  "http://localhost:2222/" , 就是传入的assetPublicPath
+        __POWERED_BY_QIANKUN__ : true
 
+    }
+    */
     await execHooksChain(toArray(beforeLoad), app, global);
+
+    /* 调试代码：查看execHooksChain执行后当前沙箱容器中被proxy代理的假window对象(fakeWindow) 新赋的属性 */
+    console.log('🚀 ~ execHooksChain ~ global:', global)
 
     /* 执行子应用的js文件，获取js的导出的{ bootstrap, mount, unmount }生命周期函数 */
     const scriptExports = await execScripts(global, sandbox && !useLooseSandbox, {
@@ -341,13 +396,18 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
     });
     console.log('🚀 ~ loadApp ~ scriptExports:', scriptExports)
 
+     /* 调试代码：查看execScripts执行当前沙箱容器中被proxy代理的假window对象(fakeWindow) 新赋的属性 */
+     console.log('🚀 ~ execScripts ~ global:', global)
+
     /* 从子应用的导出获取生命周期 */
     const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
         scriptExports,
         appName,
-        global,
+        global, // 沙箱容器中被proxy代理的假window对象(fakeWindow)
         sandboxContainer?.instance?.latestSetProp,
     );
+    console.log('🚀 ~ loadApp ~ bootstrap:', bootstrap.toString())
+
     /* 获取子应用状态方法的action */
     const { onGlobalStateChange, setGlobalState, offGlobalStateChange } = getMicroAppStateActions(appInstanceId);
 

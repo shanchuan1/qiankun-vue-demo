@@ -1,11 +1,3 @@
-/*
- * @Author: zhongqifeng 1121021693@qq.com
- * @Date: 2024-02-26 18:18:32
- * @LastEditors: zhongqifeng 1121021693@qq.com
- * @LastEditTime: 2024-02-26 18:20:35
- * @FilePath: \qiankun-vue-demo\main\src\qiankunApi\sandbox\legacy\sandbox.js
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- */
 import { rebindTarget2Fn } from '../common';
 
 function isPropConfigurable(target, prop) {
