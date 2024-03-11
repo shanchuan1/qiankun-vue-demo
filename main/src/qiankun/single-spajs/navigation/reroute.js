@@ -38,13 +38,17 @@ export function triggerAppChange() {
   // Call reroute with no arguments, intentionally
   return reroute();
 }
-
 export function reroute(
   pendingPromises = [],
   eventArguments,
   silentNavigation = false
 ) {
   if (appChangeUnderway) {
+    console.log('🚀 ~ appChangeUnderway', appChangeUnderway)
+    /* 
+    子应用已经 start了 同时子应用加载流程走完会将appChangeUnderway重新赋值为false
+    所以，只有在非子应用的路由场景下才会执行
+    */
     return new Promise((resolve, reject) => {
       peopleWaitingOnAppChange.push({
         resolve,
@@ -370,10 +374,15 @@ export function reroute(
      * a reroute instead of just getting queued behind the current reroute call.
      * We want to do this after the mounting/unmounting is done but before we
      * resolve the promise for the `reroute` function.
+     * 设置此选项允许后续对reroute（）的调用实际执行
+     * 重新路由，而不仅仅是在当前重新路由调用后面排队。
+     * 我们希望在安装/卸载完成后但在
+     * 实现“重新路由”功能的承诺。
      */
     appChangeUnderway = false;
 
     if (peopleWaitingOnAppChange.length > 0) {
+      console.log('🚀 ~ finishUpAndReturn ~ peopleWaitingOnAppChange:', peopleWaitingOnAppChange)
       /* While we were rerouting, someone else triggered another reroute that got queued.
        * So we need reroute again.
        */

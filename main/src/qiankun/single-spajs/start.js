@@ -15,6 +15,7 @@ export function start(opts) {
   started = true;
   if (isInBrowser) {
     patchHistoryApi(opts);
+    console.log('start调用的reroute重载')
     reroute();
   }
 }

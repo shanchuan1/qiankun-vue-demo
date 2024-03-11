@@ -136,5 +136,7 @@ window.addEventListener('popstate', function(event) {
 
 
 /* ----------------------------------------- window ------------------------------------------------------------ */
-// 子应用与父应用不会共享window，所以父应用访问不到childApp
+// 子应用与父应用不会共享同一个window，因为避免全局使用同一个window的污染
+// 但是因为qiankun把子应用的window使用的属性挂载到了qiankun内部被代理的假window对象fakeWindow
+// 所以父应用通过window.proxy可以访问下面定义的属性
 window.childApp = '张三'

@@ -55,9 +55,16 @@ function getExecutableScript(scriptSrc, scriptText, opts = {}) {
 	const { proxy, strictGlobal, scopedGlobalVariables = [] } = opts;
 
 	const sourceUrl = isInlineCode(scriptSrc) ? '' : `//# sourceURL=${scriptSrc}\n`;
+	/* sourceUrl为
+	//# sourceURL=http://localhost:2222/js/app.js
+	*/
 
 	// 将 scopedGlobalVariables 拼接成变量声明，用于缓存全局变量，避免每次使用时都走一遍代理
 	const scopedGlobalVariableDefinition = scopedGlobalVariables.length ? `const {${scopedGlobalVariables.join(',')}}=this;` : '';
+	/* 
+	scopedGlobalVariableDefinition为
+	"const {Array,ArrayBuffer,Boolean,constructor,DataView,Date,decodeURI,decodeURIComponent,encodeURI,encodeURIComponent,Error,escape,EvalError,Float32Array,Float64Array,Function,hasOwnProperty,Infinity,Int16Array,Int32Array,Int8Array,isFinite,isNaN,isPrototypeOf,JSON,Map,Math,NaN,Number,Object,parseFloat,parseInt,Promise,propertyIsEnumerable,Proxy,RangeError,ReferenceError,Reflect,RegExp,Set,String,Symbol,SyntaxError,toLocaleString,toString,TypeError,Uint16Array,Uint32Array,Uint8Array,Uint8ClampedArray,undefined,unescape,URIError,valueOf,WeakMap,WeakSet,window,self,globalThis,requestAnimationFrame}=this;"
+	*/
 
 	// 通过这种方式获取全局 window，因为 script 也是在全局作用域下运行的，所以我们通过 window.proxy 绑定时也必须确保绑定到全局 window 上
 	// 否则在嵌套场景下， window.proxy 设置的是内层应用的 window，而代码其实是在全局作用域运行的，会导致闭包里的 window.proxy 取的是最外层的微应用的 proxy
@@ -65,6 +72,7 @@ function getExecutableScript(scriptSrc, scriptText, opts = {}) {
 	/* 将当前沙箱容器中被proxy代理的假window对象(fakeWindow) 赋值给window.proxy 这样可让全局访问*/
 	globalWindow.proxy = proxy;
 	// TODO 通过 strictGlobal 方式切换 with 闭包，待 with 方式坑趟平后再合并
+	// 将子应用的js文件执行code绑定在window.proxy对象上(其实就是沙箱的fakeWindow)
 	return strictGlobal
 		? (
 			scopedGlobalVariableDefinition
@@ -174,11 +182,19 @@ export function execScripts(entry, scripts, proxy = window, opts = {}) {
 				getExecutableScript方法
 				1. 将当前沙箱容器中被proxy代理的假window对象(fakeWindow) 赋值给window.proxy 这样可让全局访问
 				2. scopedGlobalVariables全局作用域的变量数组拼接为string注入inlineScript代码字符串中执行
+				3. 将子应用的js文件执行code绑定在window.proxy对象上(其实就是沙箱的fakeWindow)
+				4. 返回一个拼接改造后的code文件
 				*/
 				const code = getExecutableScript(scriptSrc, rawCode, { proxy, strictGlobal, scopedGlobalVariables });
 
-				/* 执行代码 */
+
+				/* 执行代码 
+				1. 执行子应用的js文件，同时将子应用的[window挂载的属性,子应用main文件export的函数,其他]绑定到父应用代理的window.proxy对象
+				*/
 				evalCode(scriptSrc, code);
+
+				/* 调试代码：查看evalCode执行当前沙箱容器中被proxy代理的假window对象(fakeWindow) 新赋的属性 */
+				console.log('🚀 ~ evalCode ~ proxy:', proxy)
 
 				afterExec(inlineScript, scriptSrc);
 			};
@@ -194,17 +210,10 @@ export function execScripts(entry, scripts, proxy = window, opts = {}) {
 				}
 
 				if (scriptSrc === entry) {
-					console.log('🚀 ~ proxy1 ~ proxy:', proxy)
 					noteGlobalProps(strictGlobal ? proxy : window);
-
-					/* 调试代码：查看noteGlobalProps执行当前沙箱容器中被proxy代理的假window对象(fakeWindow) 新赋的属性 */
-					console.log('🚀 ~ noteGlobalProps ~ proxy:', proxy)
 					try {
 						geval(scriptSrc, inlineScript);
-						const resGlobalProp = getGlobalProp(strictGlobal ? proxy : window)
-						console.log('🚀 ~ resGlobalProp :', resGlobalProp)
 						const exports = proxy[getGlobalProp(strictGlobal ? proxy : window)] || {};
-						console.log('🚀 ~ proxy2 ~ proxy:', proxy)
 						resolve(exports);
 					} catch (e) {
 						// entry error must be thrown to make the promise settled

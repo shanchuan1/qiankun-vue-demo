@@ -102,6 +102,7 @@ let urlRerouteOnly;
 
 function urlReroute() {
   reroute([], arguments);
+
 }
 
 function patchedUpdateState(updateState, methodName) {

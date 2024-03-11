@@ -327,12 +327,13 @@ export default class ProxySandbox {
                 }
                 /* 判断假window对象上是否存在该访问器属性，同时该属性存在与假window对象上 */
                 const actualTarget = propertiesWithGetter.has(p) ? globalContext : p in target ? target : globalContext;
-                console.log('🚀 ~ get ~ actualTarget:', actualTarget)
+                // p === 'webpackJsonp_app-vue-history' && p in target && console.log('🚀 ~ get ~ webpackJsonp_app-vue-history:', actualTarget, p)
                 /* 
                 p: webpackJsonp_app-vue-history, 
                 */
                 //actualTarget[p]会触发被proxy代理的假window对象的get方法
                 const value = actualTarget[p];
+                // p === 'webpackJsonp_app-vue-history' && console.log('🚀 ~ webpackJsonp_app-vue-history ~ constructor ~ value:', value)
 
                 // frozen value should return directly, see https://github.com/umijs/qiankun/issues/2015
                 if (isPropertyFrozen(actualTarget, p)) {
@@ -352,6 +353,7 @@ export default class ProxySandbox {
                      proxyFetch('https://qiankun.com');
                 */
                 const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : globalContext;
+                // p === 'webpackJsonp_app-vue-history' && console.log('webpackJsonp_app-vue-history ~ boundTarget', boundTarget)
                 return rebindTarget2Fn(boundTarget, value);
             },
 

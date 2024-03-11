@@ -16,7 +16,7 @@ export function getCurrentRunningApp() {
 export function setCurrentRunningApp(appInstance) {
   // 将当前运行的应用程序及其代理沙箱设置为全局 window 对象，因为它的唯一用途是从现在开始的 document.createElement 被全局方式劫持
   currentRunningApp = appInstance;
-  console.log('🚀 ~ setCurrentRunningApp ~ currentRunningApp:', currentRunningApp)
+  // console.log('🚀 ~ setCurrentRunningApp ~ currentRunningApp:', currentRunningApp)
 }
 
 /**

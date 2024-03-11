@@ -256,17 +256,13 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
     2. 会先用正则匹配到其中的 js/css 相关标签，然后替换掉，它需要自己加载 js 并运行
     */
     const {
-        template,
-        execScripts,
-        assetPublicPath,
-        getExternalScripts
+        template,  // 被改造的index.html
+        execScripts, //执行js脚本的函数
+        assetPublicPath, // 资源的公共路径
+        getExternalScripts // 拉取js文件的函数
     } = await importEntry(entry, importEntryOpts);
-    // console.log('🚀 ~ template:', template);
-    // console.log('🚀 ~ execScripts:', execScripts);
-    // console.log('🚀 ~ assetPublicPath:', assetPublicPath);
-    // console.log('🚀 ~ getExternalScripts:', getExternalScripts);
 
-    /* 上面注释掉了加载js的标签，手动加载拉取js文件 */
+    /* 上面template注释掉了加载js的标签，手动加载拉取js文件 */
     await getExternalScripts();
  
     if (await validateSingularMode(singular, app)) {
@@ -280,7 +276,6 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
     appContent内容为字符串
     */
     const appContent = getDefaultTplWrapper(appInstanceId, sandbox)(template);
-    console.log('🚀 ~ appContent:', appContent);
 
     const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
     const scopedCSS = isEnableScopedCSS(sandbox);
@@ -340,7 +335,7 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
             speedySandbox, //true
         );
 
-        /* 研究一下sandboxContainer.instance.proxy到底被定义为了什么？？？ */
+        /* 研究一下sandboxContainer.instance.proxy到底被挂载了子应用的（window属性信息，main.js文件导出的函数,其他) */
         global = sandboxContainer.instance.proxy; /* 将global改为沙箱容器中被proxy代理的假window对象(fakeWindow) */
         /* 沙箱挂载 */
         mountSandbox = sandboxContainer.mount;
@@ -377,7 +372,7 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
         beforeLoad = [],
     } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
 
-    /* 
+    /* execHooksChain: 执行hooks链
     global: 沙箱容器中被proxy代理的假window对象(fakeWindow)
      此方法执行会给global 新增属性
     {
@@ -397,10 +392,12 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
     });
     console.log('🚀 ~ loadApp ~ scriptExports:', scriptExports)
 
-    /* 调试代码：查看execScripts执行当前沙箱容器中被proxy代理的假window对象(fakeWindow) 新赋的属性 */
+    /* 调试代码：查看execScripts执行当前沙箱容器中被proxy代理的假window对象(fakeWindow) 新赋的属性 
+    在这里window.proxy这个对象上的属性已经挂载完成，同时整个sandbox沙箱的环境已经完成
+    */
     console.log('🚀 ~ execScripts ~ global:', global)
 
-    
+
     /* 从子应用的导出获取生命周期 
     export async function bootstrap() {
         console.log('vue app bootstraped');
@@ -418,14 +415,13 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
         router = null;
     }
     */
-    /* 从子应用的导出获取生命周期 */
+    /* 从子应用的main.js文件导出获取生命周期 */
     const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
         scriptExports,
         appName,
         global, // 沙箱容器中被proxy代理的假window对象(fakeWindow)
         sandboxContainer?.instance?.latestSetProp,
     );
-    console.log('🚀 ~ loadApp ~ bootstrap:', bootstrap.toString())
 
     /* 获取子应用状态方法的action */
     const { onGlobalStateChange, setGlobalState, offGlobalStateChange } = getMicroAppStateActions(appInstanceId);
@@ -540,11 +536,10 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
         if (typeof update === 'function') {
             parcelConfig.update = update;
         }
-
+        console.log('🚀 ~ parcelConfigGetter ~ parcelConfig:', parcelConfig)
         return parcelConfig;
     };
 
 
-    console.log('🚀 loadApp ~ parcelConfigGetter:', parcelConfigGetter);
     return parcelConfigGetter;
 }

@@ -36,6 +36,7 @@ export function getAppChanges() {
 
   // We re-attempt to download applications in LOAD_ERROR after a timeout of 200 milliseconds
   const currentTime = new Date().getTime();
+  console.log('🚀 ~ getAppChanges ~ apps:', apps)
 
   apps.forEach((app) => {
     const appShouldBeActive =
@@ -159,6 +160,7 @@ export function registerApplication(
     /* 引入jquery的支持 */
     ensureJQuerySupport();
     /* 路由重载 */
+    console.log('registerApplication路由注册完调用的reroute重载')
     reroute();
   }
 }
