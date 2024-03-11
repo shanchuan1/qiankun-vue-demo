@@ -63,6 +63,7 @@ export function createSandboxContainer(
   
     let sideEffectsRebuilders = [];
   
+    console.log('🚀 ~ sandbox:', sandbox)
     return {
       instance: sandbox,
   

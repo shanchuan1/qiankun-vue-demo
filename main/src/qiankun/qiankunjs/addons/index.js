@@ -13,4 +13,20 @@ export default function getAddOns(global, publicPath) {
   );
   console.log('🚀 ~ getAddOns ~ Merged:', Merged)
   return Merged
+  /* Merged对象
+  {
+    "beforeLoad": [
+        ƒ beforeLoad(),
+        ƒ beforeLoad()
+    ],
+    "beforeMount": [
+        ƒ beforeMount(),
+        ƒ beforeMount()
+    ],
+    "beforeUnmount": [
+        ƒ beforeUnmount(),
+        ƒ beforeUnmount()
+    ]
+  }
+  */
 }

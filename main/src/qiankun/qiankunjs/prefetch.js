@@ -169,6 +169,7 @@ export function doPrefetchStrategy(
   } else {
     switch (prefetchStrategy) {
       case true:
+        /* 第一个应用挂载完成后再开始加载其他应用的资源 */
         prefetchAfterFirstMounted(apps, importEntryOpts);
         break;
 
