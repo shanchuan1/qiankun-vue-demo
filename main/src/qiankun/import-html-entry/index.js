@@ -72,6 +72,8 @@ function getExecutableScript(scriptSrc, scriptText, opts = {}) {
 	/* 将当前沙箱容器中被proxy代理的假window对象(fakeWindow) 赋值给window.proxy 这样可让全局访问*/
 	globalWindow.proxy = proxy;
 	// TODO 通过 strictGlobal 方式切换 with 闭包，待 with 方式坑趟平后再合并
+	//  with(this)和bind 来将执行环境指定为 window.proxy，那么scriptText的js文件code的使用的window/self/this指向都是window.proxy
+	// 应用代码，通过 with 确保所有的全局变量的操作实际都是在操作 qiankun 提供的代理对象
 	// 将子应用的js文件执行code绑定在window.proxy对象上(其实就是沙箱的fakeWindow)
 	return strictGlobal
 		? (
@@ -182,7 +184,7 @@ export function execScripts(entry, scripts, proxy = window, opts = {}) {
 				getExecutableScript方法
 				1. 将当前沙箱容器中被proxy代理的假window对象(fakeWindow) 赋值给window.proxy 这样可让全局访问
 				2. scopedGlobalVariables全局作用域的变量数组拼接为string注入inlineScript代码字符串中执行
-				3. 将子应用的js文件执行code绑定在window.proxy对象上(其实就是沙箱的fakeWindow)
+				3. 将子应用的js文件执行code的window/self/this指向绑定在window.proxy对象上，达到改变执行环境的作用(其实就是沙箱的fakeWindow)
 				4. 返回一个拼接改造后的code文件
 				*/
 				const code = getExecutableScript(scriptSrc, rawCode, { proxy, strictGlobal, scopedGlobalVariables });

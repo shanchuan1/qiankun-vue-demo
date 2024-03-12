@@ -140,3 +140,20 @@ window.addEventListener('popstate', function(event) {
 // 但是因为qiankun把子应用的window使用的属性挂载到了qiankun内部被代理的假window对象fakeWindow
 // 所以父应用通过window.proxy可以访问下面定义的属性
 window.childApp = '张三'
+let obj = {
+  a: 100,
+  b: 200,
+  c: 300
+}
+/* 可在主应用访问调用initApp获取子应用的obj */
+window.initApp = () => {
+  return obj
+}
+/* 可在主应用监听此事件的派发完成通信 */
+const createCustomEvent = (type, props) => {
+  let event = document.createEvent("HTMLEvents")
+  event.initEvent(type, true, true)
+  event.status = '子应用已启动'
+ return window.dispatchEvent(Object.assign(event,{...props}))
+}
+createCustomEvent('custom',  {info: '测试主子应用间通信'})

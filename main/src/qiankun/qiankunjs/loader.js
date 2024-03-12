@@ -415,7 +415,12 @@ export async function loadApp(app, configuration = {}, lifeCycles) {
         router = null;
     }
     */
-    /* 从子应用的main.js文件导出获取生命周期 */
+    /* 从子应用的main.js文件导出获取生命周期
+    bootstrap: 初始化
+    mount: 加载
+    unmount: 卸载
+    update: 更新
+    */
     const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
         scriptExports,
         appName,

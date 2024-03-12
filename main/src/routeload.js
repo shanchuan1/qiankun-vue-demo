@@ -97,6 +97,13 @@ window.addEventListener('popstate', function(event) {
 start();
 
 
+/* 主子应用间通信
+监听子应用的自定义事件:CustomEvent 
+*/
+window.addEventListener('custom', function(event) {
+  console.log('🚀 ~ window.addEventListener-custom ~ event:', event)
+});
+
 
 /* 
 路由式注册
@@ -120,6 +127,10 @@ bug: {
 1. 父 ==> 子
 2. 子 ==> 子 （两个子应用切换）
 3. 子应用内部路由切换
+从路由/app-vue-history(激活路由)   ===> /app-vue-history/about
+single-spa重写的pushState触发重写的popstate事件是全局的，所以pushState事件会被捕获监听，同时开始路由重导reroute()
+根据getAppChanges()判断当前/app-vue-history/about路由是在激活路由下，所有子应用的状态仍没有改变为"MOUNTED"，路由匹配+"MOUNTED"状态
+使得对子应用不做任何操作，所以子应用内部的路由切换，仅仅是子应用的vue-router实现，没有single-spa拦截的副作用
 
 4. 子 ==> 父
 子应用从已挂载到卸载阶段流程:
