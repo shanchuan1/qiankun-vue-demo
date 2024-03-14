@@ -17,7 +17,7 @@ entry: 微应用的访问地址,必须是服务启动的地址
 //   { name: 'app-vue-history', entry: 'http://localhost:2222' },
 // ]);
 
-// prefetchAppsFn()
+prefetchAppsFn()
 
 
 
@@ -34,13 +34,15 @@ entry: 微应用的访问地址,必须是服务启动的地址
 //   },
 // );
 
-window.loadAppInstance = loadMicroApp(
-  {
-    name: "app-vue-history",
-    entry: "//localhost:2222",
-    container: "#appContainer",
-    // container: '#app',
-    // activeRule: '/app-vue-history',
-    props: { data: store },
-  },
-)
+setTimeout(() => {
+    window.loadAppInstance = loadMicroApp(
+        {
+          name: "app-vue-history",
+          entry: "//localhost:2222",
+          container: "#appContainer",
+          // container: '#app',
+          // activeRule: '/app-vue-history',
+          props: { data: store },
+        },
+      )
+}, 10000);

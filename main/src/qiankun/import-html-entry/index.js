@@ -301,13 +301,23 @@ export default function importHTML(url, opts = {}) {
 		getTemplate = opts.getTemplate || defaultGetTemplate;
 	}
 
+	/* 对解析操作做了缓存处理，如果相同的url已经被处理过，则直接返回处理结果，否则通过fetch去获取模板字符串，并进行后续处理 */
 	return embedHTMLCache[url] || (embedHTMLCache[url] = fetch(url)
 		.then(response => readResAsString(response, autoDecodeResponse))
 		.then(html => {
-
+			console.log('html', html);
 			const assetPublicPath = getPublicPath(url);
 			const { template, scripts, entry, styles } = processTpl(getTemplate(html), assetPublicPath, postProcessTemplate);
+			/* 
+			template: 经过初步处理过的模板字符串
+			assetPublicPath: 外部脚本和样式的链接前缀
+			scripts:所有外部脚本的src值组成的数组
+			styles:所有外部样式的href值组成的数组
+			entry:上面提到的html模板的入口脚本链接
+			如果模板中没有被标记为entry的script标签，则会返回最后一个script标签的src值
+			*/
 
+			/* 调用getEmbedHTML函数将所有通过外部引入的样式，转换为内联样式 */
 			return getEmbedHTML(template, styles, { fetch }).then(embedHTML => ({
 				template: embedHTML,
 				assetPublicPath,
@@ -327,6 +337,14 @@ export default function importHTML(url, opts = {}) {
 				},
 			}));
 		}));
+		console.log('🚀 ~ importHTML ~ html:', html)
+		console.log('🚀 ~ importHTML ~ html:', html)
+		console.log('🚀 ~ importHTML ~ html:', html)
+		console.log('🚀 ~ importHTML ~ html:', html)
+		console.log('🚀 ~ importHTML ~ html:', html)
+		console.log('🚀 ~ importHTML ~ html:', html)
+		console.log('🚀 ~ importHTML ~ html:', html)
+		console.log('🚀 ~ importHTML ~ html:', html)
 }
 
 export function importEntry(entry, opts = {}) {

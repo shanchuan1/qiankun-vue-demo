@@ -29,6 +29,7 @@ function shouldSkipProperty(global, p) {
 // safari unpredictably lists some new globals first or second in object order
 let firstGlobalProp, secondGlobalProp, lastGlobalProp;
 
+/* 用于检测entry模块执行后window的变化，根据变化找出entry的指向结果并返回 */
 export function getGlobalProp(global) {
 	let cnt = 0;
 	let lastProp;
@@ -57,6 +58,7 @@ export function getGlobalProp(global) {
 		return lastProp;
 }
 
+/* 用于标记执行entry前window的属性状态，执行entry模块后，会导出结果并挂载到window上 */
 export function noteGlobalProps(global) {
 	// alternatively Object.keys(global).pop()
 	// but this may be faster (pending benchmarks)

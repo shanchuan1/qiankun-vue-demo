@@ -57,6 +57,7 @@ export const genModuleScriptReplaceSymbol = (scriptSrc, moduleSupport) => `<!-- 
  * @stripStyles whether to strip the css links
  * @returns {{template: void | string | *, scripts: *[], entry: *}}
  */
+/* 对资源进行分类收集并返回 */
 export default function processTpl(tpl, baseURI, postProcessTemplate) {
 
 	let scripts = [];

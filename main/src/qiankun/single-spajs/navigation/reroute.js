@@ -46,8 +46,8 @@ export function reroute(
   if (appChangeUnderway) {
     console.log('🚀 ~ appChangeUnderway', appChangeUnderway)
     /* 
-    子应用已经 start了 同时子应用加载流程走完会将appChangeUnderway重新赋值为false
-    所以，只有在非子应用的路由场景下才会执行
+    路由注册子应用场景：子应用已经 start了 同时子应用加载流程走完会将appChangeUnderway重新赋值为false，所以，只有在非子应用的路由场景下才会执行
+    手动加载子应用场景： 子应用未调用卸载前都会执行
     */
     return new Promise((resolve, reject) => {
       peopleWaitingOnAppChange.push({
