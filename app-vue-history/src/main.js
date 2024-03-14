@@ -4,6 +4,7 @@ import VueRouter from 'vue-router';
 import App from './App.vue';
 import routes from './router';
 import store from './store';
+import shareA from './components/shareA.vue'
 
 Vue.config.productionTip = false;
 
@@ -135,10 +136,11 @@ window.addEventListener('popstate', function(event) {
 
 
 
-/* ----------------------------------------- window ------------------------------------------------------------ */
+/* ------------------------------------------------window ---------------------------------------------------- */
 // 子应用与父应用不会共享同一个window，因为避免全局使用同一个window的污染
 // 但是因为qiankun把子应用的window使用的属性挂载到了qiankun内部被代理的假window对象fakeWindow
 // 所以父应用通过window.proxy可以访问下面定义的属性
+// 注意：一定得在子应用在挂载阶段，未挂载与卸载是访问不到的
 window.childApp = '张三'
 let obj = {
   a: 100,
@@ -149,6 +151,9 @@ let obj = {
 window.initApp = () => {
   return obj
 }
+
+
+/* ------------------------------------------------主子应用间通信------------------------------------------------ */
 /* 可在主应用监听此事件的派发完成通信 */
 const createCustomEvent = (type, props) => {
   let event = document.createEvent("HTMLEvents")
@@ -157,3 +162,20 @@ const createCustomEvent = (type, props) => {
  return window.dispatchEvent(Object.assign(event,{...props}))
 }
 createCustomEvent('custom',  {info: '测试主子应用间通信'})
+
+
+/* ------------------------------------------------主子应用间跨项目组件共享------------------------------------------------ */
+// export const shareComp = (container) => {
+//   return new Vue({
+//     // store,
+//     // i18n,
+//     render: h => h(shareA),
+//   }).$mount(container);
+// }
+window.shareComp = (container) => {
+  return new Vue({
+    // store,
+    // i18n,
+    render: h => h(shareA),
+  }).$mount(container);
+}

@@ -1,3 +1,17 @@
+const RuleType = {
+    // type: rule will be rewrote
+    STYLE : 1,
+    MEDIA : 4,
+    SUPPORTS : 12,
+    // type: value will be kept
+    IMPORT : 3,
+    FONT_FACE : 5,
+    PAGE : 6,
+    KEYFRAMES : 7,
+    KEYFRAME : 8,
+  }
+
+
 const arrayify = (list) => {
     return [].slice.call(list, 0);
 };
@@ -138,6 +152,19 @@ class ScopedCSS {
 
 let processor
 export const QiankunCSSRewriteAttr = 'data-qiankun';
+
+
+/* 赋予样式特殊选择器完成样式隔离  特殊选择器 [data-qiankun="app-vue-history"]
+在loadApp过程中，执行createElement方法中
+appElement.querySelectorAll('style') //appElement为子应用容器dom(顶级div存在id="__qiankun_microapp_wrapper_for_app_vue_history__"这个dom结构)
+内部暂时不存在style标签，
+根据vue机制，vue项目在路由对应下的所有.vue文件的style样式会一一被新增赋值到<head>标签内的<style>标签，这是js的逻辑实现的。
+所以在createElement创建dom容器这段并不会触发process方法
+
+
+然而在sandbox沙箱创建，因为head标签内的<style>标签已经被添加了(应该是sandbox捕获到了全局document的appendChild事件)
+从而触发执行getOverwrittenAppendChildOrInsertBefore方法会调用这段process函数
+*/
 export const process = (
     appWrapper,
     stylesheetElement,
@@ -158,7 +185,6 @@ export const process = (
     }
 
     const tag = (mountDOM.tagName || '').toLowerCase();
-
     if (tag && stylesheetElement.tagName === 'STYLE') {
         const prefix = `${tag}[${QiankunCSSRewriteAttr}="${appName}"]`;
         processor.process(stylesheetElement, prefix);

@@ -52,8 +52,8 @@ console.log("-----------------监听url地址-------------------------");
 //   console.log('测试子应用vue-router切换路由是否是调用这个replaceState事件');
 // }
 
+// -------------------------------------------------------监听 popstate 事件---------------------------------------------------
 /* 
-监听 popstate 事件
 原本的popstate事件被single-spa拦截重写了
 外部能监听到的popstate事件，是single-spa重新派发的一个新popstate的事件
 single-spa监听的是history.replaceState事件（vue-router的路由切换触发的就是pushState与replaceState事件）
@@ -89,15 +89,43 @@ window.addEventListener('popstate', function(event) {
 
 
 /* start其实也是single-spa的start这个api二次封装的
-一、拦截改造History的API（主要是监听改造hashchange popstate）这个两个事件
-   1. 
-二、路由重导
-
+1.拦截改造History的API（主要是监听改造hashchange popstate）这个两个事件
+2.路由重导
 */
-start();
+//  -------------------------------------------------------css样式隔离-----------------------------------------------------------
 
 
-/* 主子应用间通信
+/* 一、
+配置为 { strictStyleIsolation: true } 时表示开启严格的样式隔离模式。
+这种模式下 qiankun 会为每个微应用的容器包裹上一个 shadow dom 节点，从而确保微应用的样式不会对全局造成影响。
+*/
+// start({sandbox:{strictStyleIsolation: true}});
+
+/* 二、
+实验性的样式隔离特性，当 experimentalStyleIsolation 被设置为 true 时，
+qiankun 会改写子应用所添加的样式为所有样式规则增加一个特殊的选择器规则来限定其影响范围，因此改写后的代码会表达类似为如下结构：
+*/
+// start({sandbox:{experimentalStyleIsolation: true}});
+
+/* 样式选择器的结构
+// 假设应用名是 react16
+.app-main {
+  font-size: 14px;
+}
+
+div[data-qiankun-react16] .app-main {
+  font-size: 14px;
+}
+
+/* 三、
+默认情况下沙箱可以确保单实例场景子应用之间的样式隔离，但是无法确保主应用跟子应用、或者多实例场景的子应用样式隔离
+*/
+start()
+
+
+
+//  --------------------------------------------------主子应用间通信------------------------------------------------
+/* 
 监听子应用的自定义事件:CustomEvent 
 */
 window.addEventListener('custom', function(event) {
@@ -123,7 +151,7 @@ bug: {
 2. 在父应用是拉取子应用资源（html,js）
 */
 
-/* 路由变化，生命周期变化
+/* ---------------------------------------------------路由变化，生命周期变化------------------------------------------------------
 1. 父 ==> 子
 2. 子 ==> 子 （两个子应用切换）
 3. 子应用内部路由切换

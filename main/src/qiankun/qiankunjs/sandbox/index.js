@@ -48,6 +48,7 @@ export function createSandboxContainer(
     }
   
     // some side effect could be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
+    // 在初始化时可能会调用一些副作用，例如使用样式加载器动态注入样式表，尤其是在开发阶段
     const bootstrappingFreers = patchAtBootstrapping(
       appName,
       elementGetter,

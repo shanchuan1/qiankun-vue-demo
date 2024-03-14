@@ -55,6 +55,8 @@ async function validateSingularMode(
     return typeof validate === 'function' ? validate(app) : !!validate;
 }
 
+const supportShadowDOM = !!document.head.attachShadow || !!document.head.createShadowRoot;
+
 /* 将子应用的index.html的字符串文本，转为真实dom的innerHTML的内容 */
 function createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceId) {
     const containerElement = document.createElement('div');
@@ -89,6 +91,7 @@ function createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceI
 
         const styleNodes = appElement.querySelectorAll('style') || [];
         styleNodes.forEach((stylesheetElement) => {
+            console.log('🚀 ~ styleNodes.forEach ~ stylesheetElement:', stylesheetElement)
             css.process(appElement, stylesheetElement, appInstanceId);
         });
     }

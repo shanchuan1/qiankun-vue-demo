@@ -36,6 +36,11 @@ export default {
   name: 'HelloWorld',
   props: {
     msg: String
+  },
+  methods:{
+    removeSelf() {
+      this.$el.parentNode.removeChild(this.$el); // 从 DOM 结构中移除自身元素
+    }
   }
 }
 </script>
