@@ -307,7 +307,7 @@ export default function importHTML(url, opts = {}) {
 		.then(response => readResAsString(response, autoDecodeResponse))
 		.then(html => {
 			/* 调试代码，判断embedHTMLCache能不能缓存这些懒加载资源， 结果是不能 */
-		    console.log('🚀 ~ importHTML ~ html:', html)
+		    // console.log('🚀 ~ importHTML ~ html:', html)
 
 			const assetPublicPath = getPublicPath(url);
 			const { template, scripts, entry, styles } = processTpl(getTemplate(html), assetPublicPath, postProcessTemplate);

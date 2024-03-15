@@ -11,6 +11,12 @@ entry: 微应用的访问地址,必须是服务启动的地址
 
 */
 
+
+/* 
+本地服务地址：http://localhost:2222
+如果本地地址被proxy代理为dev环境地址，那么拉取的资源也就是dev环境的
+
+*/
 /* 预加载 微应用*/
 prefetchApps([
   // { name: 'app-vue-hash', entry: 'http://localhost:1111' },
