@@ -3,11 +3,25 @@
     <div id="nav">
       <router-link to="/">Home</router-link> |
       <router-link to="/about">About</router-link>
+      <!-- 测试子应用可以正常监听window使用window.scrollTo -->
+      <button @click="srcollToTest">测试scrollTo滚动</button>
     </div>
     <router-view/>
   </div>
 </template>
 
+<script>
+  export default {
+    methods: {
+      srcollToTest: () => {
+        window.scrollTo({ top: 3000 });
+      },
+      srcollIntoViewTest: () => {
+        //
+      }
+  },
+}
+</script>
 <style>
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
