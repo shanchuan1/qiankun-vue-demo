@@ -1,5 +1,5 @@
 /* qiankunAPi  */
-import {prefetchAppsFn, loadMicroApp} from './qiankun/qiankunjs'
+import {prefetchApps, loadMicroApp} from './qiankun/qiankunjs'
 import store from "./store";
 
 
@@ -12,12 +12,12 @@ entry: 微应用的访问地址,必须是服务启动的地址
 */
 
 /* 预加载 微应用*/
-// prefetchApps([
-//   // { name: 'app-vue-hash', entry: 'http://localhost:1111' },
-//   { name: 'app-vue-history', entry: 'http://localhost:2222' },
-// ]);
+prefetchApps([
+  // { name: 'app-vue-hash', entry: 'http://localhost:1111' },
+  { name: 'app-vue-history', entry: 'http://localhost:2222' },
+]);
 
-prefetchAppsFn()
+// prefetchAppsFn()
 
 
 
@@ -45,4 +45,4 @@ setTimeout(() => {
           props: { data: store },
         },
       )
-}, 10000);
+}, 3000);

@@ -300,12 +300,15 @@ export default function importHTML(url, opts = {}) {
 		getPublicPath = opts.getPublicPath || opts.getDomain || defaultGetPublicPath;
 		getTemplate = opts.getTemplate || defaultGetTemplate;
 	}
+	console.log('-----------开始拉取资源解析------------');
 
 	/* 对解析操作做了缓存处理，如果相同的url已经被处理过，则直接返回处理结果，否则通过fetch去获取模板字符串，并进行后续处理 */
 	return embedHTMLCache[url] || (embedHTMLCache[url] = fetch(url)
 		.then(response => readResAsString(response, autoDecodeResponse))
 		.then(html => {
-			console.log('html', html);
+			/* 调试代码，判断embedHTMLCache能不能缓存这些懒加载资源， 结果是不能 */
+		    console.log('🚀 ~ importHTML ~ html:', html)
+
 			const assetPublicPath = getPublicPath(url);
 			const { template, scripts, entry, styles } = processTpl(getTemplate(html), assetPublicPath, postProcessTemplate);
 			/* 
@@ -337,14 +340,6 @@ export default function importHTML(url, opts = {}) {
 				},
 			}));
 		}));
-		console.log('🚀 ~ importHTML ~ html:', html)
-		console.log('🚀 ~ importHTML ~ html:', html)
-		console.log('🚀 ~ importHTML ~ html:', html)
-		console.log('🚀 ~ importHTML ~ html:', html)
-		console.log('🚀 ~ importHTML ~ html:', html)
-		console.log('🚀 ~ importHTML ~ html:', html)
-		console.log('🚀 ~ importHTML ~ html:', html)
-		console.log('🚀 ~ importHTML ~ html:', html)
 }
 
 export function importEntry(entry, opts = {}) {

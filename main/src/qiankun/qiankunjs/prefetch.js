@@ -1,4 +1,5 @@
-import { importEntry } from 'import-html-entry';
+// import { importEntry } from 'import-html-entry';
+import { importEntry } from '../import-html-entry';
 import { isFunction } from 'lodash';
 // import { getAppStatus, getMountedApps, NOT_LOADED } from 'single-spa';
 import { getAppStatus, getMountedApps, NOT_LOADED } from '../single-spajs';
@@ -72,11 +73,6 @@ function prefetch(entry, opts) {
   requestIdleCallback(async () => {
     /* 重点是importEntry做了哪些工作？==============> 返回了拉取js与css文件的函数 */
     const { getExternalScripts, getExternalStyleSheets } = await importEntry(entry, opts);
-    console.log(
-      '🚀 ~ requestIdleCallback ~ getExternalScripts, getExternalStyleSheets:',
-      getExternalScripts,
-      getExternalStyleSheets,
-    );
     /* 拉取样式表与js文件 */
     requestIdleCallback(getExternalStyleSheets);
     requestIdleCallback(getExternalScripts);
