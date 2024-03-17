@@ -1,8 +1,9 @@
+
 /* qiankunAPi  */
 import {prefetchApps, loadMicroApp} from './qiankun/qiankunjs'
 import store from "./store";
 
-
+const originHead = `${window.location.protocol}//${window.location.hostname}`
 
 /* ------------------------------------------ 手动加载微应用 ----------------------------------------- */
 /* 
