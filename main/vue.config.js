@@ -2,17 +2,13 @@ const path = require("path");
 
 const proxy = {
   proxy: {
-    '/app1': {
+    '/app-history': { // 本地配置子应用代理
       // target: process.env.VUE_APP_PROXY_LOCAL_URL,
       target: 'http://localhost:2222',
       changeOrigin: true,
-      logLevel: 'debug'
-    },
-    '/openapi': {
-      target: 'http://192.168.22.151:8097', // * 2.0后端地址，常驻地址
-      changeOrigin: true,
+      logLevel: 'debug',
       pathRewrite: {
-        '^/openapi': '' // 需要rewrite的,
+        '^/app-history': '' // 需要rewrite的, 因为http://localhost:2222服务器不存在http://localhost:2222/app1这样的路径所以需要修改请求路径
       }
     },
   }

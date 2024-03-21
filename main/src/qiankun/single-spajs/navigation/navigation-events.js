@@ -81,7 +81,7 @@ export function navigateToUrl(obj) {
 
 export function callCapturedEventListeners(eventArguments) {
   if (eventArguments) {
-    const eventType = eventArguments[0].type;
+    const eventType = eventArguments[0]?.type;
     if (routingEventsListeningTo.indexOf(eventType) >= 0) {
       capturedEventListeners[eventType].forEach((listener) => {
         try {

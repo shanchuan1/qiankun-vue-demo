@@ -18,7 +18,7 @@ registerMicroApps([
   {
     name: "app-vue-history",
     // entry: "http://localhost:2222",
-    entry: "http://localhost:8080/app1",
+    entry: "http://localhost:8082/app-history", // 本地配置子应用代理
     container: "#appContainer",
     // container: '#app',
     activeRule: "/app-vue-history",

@@ -1,5 +1,7 @@
 const { name } = require('./package');
+// process.env.VUE_APP_HISTORY_URL = 'http://localhost:2222'
 module.exports = {
+  publicPath: 'http://localhost:2222/', // 可补全index.html内js文件的引入地址
   devServer: {
     port: 2222,
     headers: {
